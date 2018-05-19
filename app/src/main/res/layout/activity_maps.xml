@@ -18,16 +18,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#a8ffffff">
-    <fragment
-        android:id="@+id/autocomplete_fragment"
-        android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+
+        <fragment
+            android:id="@+id/autocomplete_fragment"
+            android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
     </android.support.v7.widget.CardView>
 
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
+        android:id="@+id/createRouteBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
@@ -35,8 +36,34 @@
         android:layout_marginRight="60dp"
         android:background="#eeeeee"
         android:clickable="true"
+        android:focusable="true"
         android:rotation="0"
-        android:src="@drawable/ic_add_white_36dp"
-        android:focusable="true" />
+        android:src="@drawable/ic_add_white_36dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/sendRouteBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="20dp"
+        android:layout_marginRight="60dp"
+        android:background="#eeeeee"
+        android:clickable="true"
+        android:focusable="true"
+        android:rotation="0"
+        android:src="@drawable/ic_add_white_36dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/cancelRouteBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="20dp"
+        android:layout_marginRight="120dp"
+        android:background="#eeeeee"
+        android:clickable="true"
+        android:focusable="true"
+        android:rotation="0"
+        android:src="@drawable/ic_add_white_36dp" />
 
 </android.support.design.widget.CoordinatorLayout>

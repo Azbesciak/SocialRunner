@@ -1,29 +1,26 @@
 package facebook.com.socialrunner
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
-import android.location.LocationManager
 import android.os.Bundle
-import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.view.View
-import android.widget.Button
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.*
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.places.ui.PlacePicker
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -35,7 +32,6 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
-import java.net.Authenticator
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -47,6 +43,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
 
+    private val routeCreator by lazy { NewRouteCreator(map) }
     private lateinit var mGoogleSignInClient : GoogleSignInClient
     private val gpsManager = GPSManager(::getPosition)
 
@@ -66,16 +63,43 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        initButtons()
         createLocationRequest()
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
+        FirebaseApp.initializeApp(this)
+    }
 
-        val fab = findViewById<FloatingActionButton>(R.id.fab)
-        fab.setOnClickListener {
-//            loadPlacePicker()
+    private fun initButtons() {
+        stopAdding()
+        createRouteBtn.setOnClickListener {
+            startAdding()
         }
 
-        var gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-        FirebaseApp.initializeApp(this)
+        sendRouteBtn.setOnClickListener {
+            routeCreator.send()
+            stopAdding()
+        }
+
+        cancelRouteBtn.setOnClickListener {
+            stopAdding()
+        }
+    }
+
+    private fun startAdding() {
+        routeCreator.initialize()
+        sendRouteBtn.show()
+        cancelRouteBtn.show()
+        createRouteBtn.hide()
+    }
+
+    private fun stopAdding() {
+        if (::map.isInitialized) {
+            routeCreator.disable()
+        }
+        sendRouteBtn.hide()
+        cancelRouteBtn.hide()
+        createRouteBtn.show()
     }
 
     override fun onStart() {
@@ -93,10 +117,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         gpsManager.getPosition(this)
     }
 
-    val RC_SIGN_IN = 1000
-    val auth = "auth"
+    private val RC_SIGN_IN = 1000
     private fun signIn() {
-        val signInIntent = mGoogleSignInClient.getSignInIntent()
+        val signInIntent = mGoogleSignInClient.signInIntent
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
@@ -105,6 +128,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
     }
 
+    private val auth = "auth"
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CHECK_SETTINGS) {
@@ -123,15 +147,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
         }
 
-        if(requestCode==RC_SIGN_IN)
-        {
-            if(resultCode == Activity.RESULT_OK)
-            {
+        if (requestCode == RC_SIGN_IN) {
+            if (resultCode == Activity.RESULT_OK) {
                 Log.i(auth, "")
-            }
-            else
-            {
-                Log.i(auth, "result code is ${resultCode}")
+            } else {
+                Log.i(auth, "result code is $resultCode")
             }
 
             var user = getUsername(this)
@@ -140,7 +160,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             Log.i(auth, "sign in method, user is ${username}");
         }
     }
-
 
     public override fun onResume() {
         super.onResume()
