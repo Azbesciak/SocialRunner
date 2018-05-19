@@ -3,15 +3,9 @@ package facebook.com.socialrunner.domain.service;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import facebook.com.socialrunner.domain.data.entity.Route;
 import facebook.com.socialrunner.domain.data.entity.RoutePoint;
@@ -19,6 +13,7 @@ import facebook.com.socialrunner.domain.data.entity.Runner;
 import facebook.com.socialrunner.domain.data.repository.ResultHandler;
 import facebook.com.socialrunner.domain.data.repository.RouteRepository;
 import facebook.com.socialrunner.domain.data.repository.RunnerRepository;
+import facebook.com.socialrunner.util.backward.Consumer;
 
 public class RouteService {
 
@@ -31,20 +26,17 @@ public class RouteService {
         this.runnerRepository = new RunnerRepository();
     }
 
-    public void getRoutesForUser(String username, Consumer<Collection<Route>> onFetch) {
+    public void getRoutesForUser(String username, Consumer<List<Route>> onFetch) {
 
         ResultHandler<Runner> runnerHandler = new ResultHandler<>(runner -> {
 
-            Iterator<String> routeIdsIterator = runner.getRouteIds().iterator();
             Map<String, Route> routes = new HashMap<>();
 
             for (String routeId : runner.getRouteIds()) {
 
                 routeRepository.fetchById(routeId, new ResultHandler<Route>(route -> {
-                    synchronized (routes) {
-                        routes.put(routeId, route);
-                        onFetch.accept(routes.values());
-                    }
+                    routes.put(routeId, route);
+                    onFetch.accept(new ArrayList<>(routes.values()));
                 }));
             }
         });
@@ -56,14 +48,10 @@ public class RouteService {
 
         ResultHandler<Runner> handler = new ResultHandler<>(runner -> {
             Route route = new Route();
-            List<RoutePoint> routePoints =
-                    waypoints.stream()
-                            .map(loc -> new RoutePoint(loc.latitude, loc.longitude))
-                            .collect(Collectors.toList());
-
-            route.setRoutePoints(routePoints);
+            route.setRoutePoints(parseCoordinates(waypoints));
 
             routeRepository.create(route);
+
             if (runner != null) {
                 runner.getRouteIds().add(route.getId());
                 runnerRepository.update(runner);
@@ -71,5 +59,15 @@ public class RouteService {
         });
 
         runnerRepository.fetchByName(username, handler);
+    }
+
+    private List<RoutePoint> parseCoordinates(List<LatLng> coordinates) {
+
+        List<RoutePoint> routePoints = new ArrayList<>();
+
+        for (LatLng coordinate : coordinates)
+            routePoints.add(new RoutePoint(coordinate.latitude, coordinate.longitude));
+
+        return routePoints;
     }
 }
