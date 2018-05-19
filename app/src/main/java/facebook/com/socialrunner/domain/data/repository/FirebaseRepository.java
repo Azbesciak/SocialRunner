@@ -3,6 +3,8 @@ package facebook.com.socialrunner.domain.data.repository;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.List;
+
 import facebook.com.socialrunner.domain.data.entity.Entity;
 
 public abstract class FirebaseRepository<T extends Entity> {
@@ -15,12 +17,12 @@ public abstract class FirebaseRepository<T extends Entity> {
         this.entityPath = entityPath;
     }
 
-    protected void fetchByPath(String path, ResultHandler<T> handler) {
+    protected <R> void fetchByPath(String path, ResultHandler<R> handler) {
         DatabaseReference query =  db.getReference(path);
         query.addValueEventListener(handler.asListener());
     }
 
-    public void fetch(String path, ResultHandler<T> handler) {
+    public void fetch(String path, ResultHandler<List<T>> handler) {
         fetchByPath(entityPath, handler);
     }
 

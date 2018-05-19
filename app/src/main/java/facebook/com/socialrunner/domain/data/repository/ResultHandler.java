@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResultHandler<T extends Entity> {
+public class ResultHandler<T> {
 
     private Consumer<T> onDataChange;
     private Consumer<Void> onCancel;
