@@ -43,10 +43,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
 
-    private val routeCreator by lazy { NewRouteCreator(map, {
-        route -> sendRouteBtn.isEnabled = route.isNotEmpty()
-    }) }
-    private lateinit var mGoogleSignInClient : GoogleSignInClient
+    private val routeCreator by lazy {
+        NewRouteCreator(map,
+                getString(R.string.google_api_key),
+                { sendRouteBtn.isEnabled = it.isNotEmpty() }
+        )
+    }
+    private lateinit var mGoogleSignInClient: GoogleSignInClient
     private val gpsManager = GPSManager(::getPosition)
 
     companion object {
@@ -109,12 +112,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onStart() {
         super.onStart()
         val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
-        if(account == null)
-        {
+        if (account == null) {
             signIn()
-        }else
-        {
-            username = account.email?.split("@")?.get(0) ?:  "unknown_username"
+        } else {
+            username = account.email?.split("@")?.get(0) ?: "unknown_username"
             Log.i(auth, "saved authenticated user is ${username}")
         }
 
@@ -127,8 +128,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-    fun getPosition(location: Location)
-    {
+    private fun getPosition(location: Location) {
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
     }
 
@@ -219,7 +219,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         val titleStr = getAddress(location)  // add these two lines
         markerOptions.title(titleStr)
-
+        routeCreator.waypoints.add(location)
         map.addMarker(markerOptions)
     }
 
