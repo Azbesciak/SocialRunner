@@ -5,6 +5,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.maps.DirectionsApi
 import com.google.maps.GeoApiContext
@@ -46,7 +47,7 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
                 with(marker.position) {
                     waypoints.removeIf {
                         abs(it.latitude - latitude) < epsilon &&
-                        abs(it.longitude - longitude) < epsilon
+                                abs(it.longitude - longitude) < epsilon
                     }
                 }
                 onRouteChangeListener(waypoints)
@@ -55,7 +56,6 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
                     waypoints.forEach { addMarker(it.marker()) }
                     drawWaypoints()
                 }
-
             }
             true
         }
@@ -65,7 +65,7 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
 
     private fun drawWaypoints() {
         if (waypoints.size <= 1) return
-        getDirectionsDetails(TravelMode.WALKING)?.let {results ->
+        getDirectionsDetails(TravelMode.WALKING)?.let { results ->
             addPolyline(results, googleMap)
             positionCamera(results.routes[overview], googleMap)
             addMarkersToMap(results, googleMap)
@@ -88,24 +88,25 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
     }
 
     private fun addMarkersToMap(results: DirectionsResult, mMap: GoogleMap) {
-        mMap.addMarker(MarkerOptions().position(LatLng(
-                results.routes[overview].legs[overview].startLocation.lat,
-                results.routes[overview].legs[overview].startLocation.lng)))
-        mMap.addMarker(MarkerOptions().position(
-                LatLng(results.routes[overview].legs[overview].endLocation.lat,
-                        results.routes[overview].legs[overview].endLocation.lng))
-                .title(results.routes[overview].legs[overview].startAddress).snippet(getEndLocationTitle(results)))
+        with(results.routes[overview].legs[overview]) {
+            mMap.addMarker(MarkerOptions().position(LatLng(startLocation.lat, startLocation.lng)))
+            mMap.addMarker(MarkerOptions().position(LatLng(endLocation.lat, endLocation.lng))
+                    .title(startAddress).snippet(getEndLocationTitle(results)))
+        }
+
     }
 
     private fun positionCamera(route: DirectionsRoute, mMap: GoogleMap) {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(route.legs[overview].startLocation.lat, route.legs[overview].startLocation.lng), 12f))
+        with(route.legs[overview].startLocation) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 12f))
+        }
     }
 
-    private fun addPolyline(results: DirectionsResult, mMap: GoogleMap) {
+    private fun addPolyline(results: DirectionsResult, mMap: GoogleMap): Polyline? {
         val decodedPath = PolylineEncoding
                 .decode(results.routes[overview].overviewPolyline.encodedPath)
                 .map { LatLng(it.lat, it.lng) }
-        mMap.addPolyline(PolylineOptions().addAll(decodedPath))
+        return mMap.addPolyline(PolylineOptions().addAll(decodedPath))
     }
 
     private fun getEndLocationTitle(results: DirectionsResult): String {
