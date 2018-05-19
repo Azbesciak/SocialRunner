@@ -20,12 +20,6 @@ class GPSManager(val newPositionCallback : (Location) -> Unit){
 // Define a listener that responds to location updates
         val locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                // Called when a new location is found by the network location provider.
-                makeUseOfNewLocation(location)
-            }
-
-            private fun makeUseOfNewLocation(location: Location) {
-                //Log.i("gps", "new location is ${location}")
                 newPositionCallback(location)
             }
 
@@ -36,7 +30,7 @@ class GPSManager(val newPositionCallback : (Location) -> Unit){
             override fun onProviderDisabled(provider: String) {}
         }
 
-        locationManager.requestLocationUpdates(locationProvider, 0, 0f, locationListener)
+        locationManager.requestLocationUpdates(locationProvider, 2000, 0f, locationListener)
 
     }
 }
