@@ -62,7 +62,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         )
     }
     private lateinit var mGoogleSignInClient: GoogleSignInClient
-    private val gpsManager = GPSManager(::getPosition)
+    private val gpsManager = GPSManager(::newPosition)
 
 
     companion object {
@@ -178,7 +178,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-    private fun getPosition(location: Location) {
+    private fun newPosition(location: Location) {
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
     }
 

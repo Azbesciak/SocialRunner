@@ -16,7 +16,7 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
                       var waypoints: MutableList<LatLng> = mutableListOf(),
                       var startTime: DateTime = DateTime(), private var canSend: Boolean = false) {
     companion object {
-        const val epsilon = 0.005
+        const val epsilon = 0.0005
     }
 
     init {
@@ -63,7 +63,7 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
                 with(googleMap) {
                     addPolyline(results)
                     addMarkersToMap(results)
-                    positionCamera(results.routes[overview])
+                    positionCamera(results.routes[overview], googleMap.cameraPosition.zoom)
                 }
         }
     }

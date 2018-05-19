@@ -27,9 +27,9 @@ fun GoogleMap.addMarkersToMap(results: DirectionsResult) {
     }
 }
 
-fun GoogleMap.positionCamera(route: DirectionsRoute) {
+fun GoogleMap.positionCamera(route: DirectionsRoute, zoom : Float) {
     with(route.legs[overview].startLocation) {
-        moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 12f))
+        moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), zoom))
     }
 }
 

@@ -21,7 +21,7 @@ class NewRunDialog : DialogFragment() {
         val builder = AlertDialog.Builder(activity)
         builder.setTitle("Final set up")
         val inputPace = EditText(appContext)
-        inputPace.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        inputPace.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_CLASS_NUMBER)
         inputPace.setHint("Type your pace [min/km]")
         val padding = 30
         inputPace.setPadding(padding ,padding ,padding ,padding )
