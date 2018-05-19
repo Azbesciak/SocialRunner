@@ -1,6 +1,7 @@
 package facebook.com.socialrunner.domain.service
 
 import facebook.com.socialrunner.domain.data.entity.Runner
+import facebook.com.socialrunner.domain.data.repository.ResultHandler
 import facebook.com.socialrunner.domain.data.repository.RunnerRepository
 
 class RunnerService {
@@ -11,5 +12,9 @@ class RunnerService {
 
         val runner = Runner(name = username, routeIds = mutableListOf())
         runnerRepository.create(runner)
+    }
+
+    fun getRunnerLocation(username : String, handler : ResultHandler<String>) {
+        runnerRepository.fetchLocation(username, handler)
     }
 }

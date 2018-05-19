@@ -51,7 +51,7 @@ abstract class FirebaseRepository<T : Entity>(private val entityPath: String) {
             db.getReference(getPathWithId(id)).removeValue()
     }
 
-    private fun getPathWithId(id: String): String {
+    protected fun getPathWithId(id: String): String {
         return String.format("%s/%s", entityPath, id)
     }
 }
