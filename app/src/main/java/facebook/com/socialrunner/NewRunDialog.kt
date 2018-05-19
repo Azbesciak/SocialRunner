@@ -11,9 +11,7 @@ import android.widget.EditText
 import android.text.InputType
 
 
-
-
-class NewRunDialog() : DialogFragment() {
+class NewRunDialog : DialogFragment() {
     private lateinit var postponeCallback : (Double) -> Unit
     private lateinit var startCallback : (Double) -> Unit
     private lateinit var appContext : Context
@@ -22,7 +20,7 @@ class NewRunDialog() : DialogFragment() {
         var pace = 0
         val builder = AlertDialog.Builder(activity)
         builder.setTitle("Final set up")
-        var inputPace = EditText(appContext)
+        val inputPace = EditText(appContext)
         inputPace.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL)
         inputPace.setHint("Type your pace [min/km]")
         val padding = 30
