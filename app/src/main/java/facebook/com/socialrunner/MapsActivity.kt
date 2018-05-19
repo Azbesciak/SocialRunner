@@ -176,7 +176,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Log.i(auth, "result code is $resultCode")
             }
 
-            var user = getUsername(this)
+            val user = getUsername(this)
             Log.i(auth, "user is ${user}");
             getUsername(this)
             Log.i(auth, "sign in method, user is ${username}");
