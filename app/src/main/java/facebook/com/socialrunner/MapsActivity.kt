@@ -33,7 +33,6 @@ import com.google.firebase.FirebaseApp
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 
-
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var map: GoogleMap
@@ -51,6 +50,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
     private lateinit var mGoogleSignInClient: GoogleSignInClient
     private val gpsManager = GPSManager(::getPosition)
+
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -73,6 +73,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         FirebaseApp.initializeApp(this)
+
     }
 
     private fun initButtons() {
@@ -85,11 +86,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             routeCreator.send()
             sendRouteBtn.isEnabled = false
             stopAdding()
+            NewRunDialog().setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
         }
 
         cancelRouteBtn.setOnClickListener {
             stopAdding()
         }
+    }
+
+
+    private fun startRun()
+    {
+        Log.i("run", "started")
+    }
+
+    private fun postponeRun()
+    {
+        TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
+    }
+
+    private fun runTimePicked(hour : Int, minute : Int)
+    {
+        Log.i("run", "run time is set to ${hour}:${minute}")
     }
 
     private fun startAdding() {
