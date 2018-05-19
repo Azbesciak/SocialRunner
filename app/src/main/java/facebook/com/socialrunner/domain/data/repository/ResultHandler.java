@@ -4,11 +4,11 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.function.Consumer;
+
 import facebook.com.socialrunner.domain.data.entity.Entity;
-import facebook.com.socialrunner.util.backward.Consumer;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor

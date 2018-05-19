@@ -15,19 +15,21 @@ public abstract class FirebaseRepository<T extends Entity> {
         this.entityPath = entityPath;
     }
 
-    protected void watch(String path, ResultHandler<T> handler) {
-
+    protected void fetchByPath(String path, ResultHandler<T> handler) {
         DatabaseReference query =  db.getReference(path);
         query.addValueEventListener(handler.asListener());
     }
 
-    protected void watchById(String id, ResultHandler<T> handler) {
-
-        String path = getPathWithId(id);
-        watch(path, handler);
+    public void fetch(String path, ResultHandler<T> handler) {
+        fetchByPath(entityPath, handler);
     }
 
-    protected void create(T entity) {
+    public void fetchById(String id, ResultHandler<T> handler) {
+        String path = getPathWithId(id);
+        fetchByPath(path, handler);
+    }
+
+    public void create(T entity) {
         if (entity.getId() != null)
             throw new IllegalStateException("Entity already saved");
 
@@ -37,7 +39,7 @@ public abstract class FirebaseRepository<T extends Entity> {
         newEntity.setValue(newEntity);
     }
 
-    protected void update(T entity) {
+    public void update(T entity) {
         if (entity.getId() == null)
             throw new IllegalStateException("Entity not saved");
 
@@ -45,7 +47,7 @@ public abstract class FirebaseRepository<T extends Entity> {
         reference.setValue(entity);
     }
 
-    protected void delete(String id) {
+    public void delete(String id) {
         if (id != null)
             db.getReference(getPathWithId(id)).removeValue();
     }
