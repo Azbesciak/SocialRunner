@@ -12,6 +12,8 @@ import com.google.maps.internal.PolylineEncoding
 import com.google.maps.model.DirectionsResult
 import com.google.maps.model.DirectionsRoute
 import com.google.maps.model.TravelMode
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.launch
 import org.joda.time.DateTime
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -23,42 +25,46 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
                       var startTime: DateTime = DateTime(), private var canSend: Boolean = false) {
     companion object {
         const val overview = 0
-        const val epsilon = 0.001
+        const val epsilon = 0.005
     }
 
     init {
         googleMap.setOnMapClickListener { point ->
-            if (!canSend) return@setOnMapClickListener
-            val marker = point.marker()
-            googleMap.addMarker(marker)
-            waypoints.add(point)
-            onRouteChangeListener(waypoints)
-            if (waypoints.size <= 1) return@setOnMapClickListener
-            drawWaypoints()
+            launch(UI) {
+                if (!canSend) return@launch
+                val marker = point.marker()
+                googleMap.addMarker(marker)
+                waypoints.add(point)
+                onRouteChangeListener(waypoints)
+                drawWaypoints()
+            }
+
         }
 
         googleMap.setOnMarkerClickListener { marker ->
-            with(marker.position) {
-                waypoints.removeIf {l ->
-                    abs(l.latitude - latitude) < epsilon && abs(l.longitude - longitude) < epsilon
+            launch(UI) {
+                with(marker.position) {
+                    waypoints.removeIf {
+                        abs(it.latitude - latitude) < epsilon &&
+                        abs(it.longitude - longitude) < epsilon
+                    }
                 }
-            }
-            onRouteChangeListener(waypoints)
-            googleMap.apply {
-                clear()
-                if (waypoints.size < 2) {
+                onRouteChangeListener(waypoints)
+                googleMap.apply {
+                    clear()
                     waypoints.forEach { addMarker(it.marker()) }
-                } else {
                     drawWaypoints()
                 }
+
             }
-            false
+            true
         }
     }
 
     private fun LatLng.marker() = MarkerOptions().position(this)!!
 
     private fun drawWaypoints() {
+        if (waypoints.size <= 1) return
         getDirectionsDetails(TravelMode.WALKING)?.let {results ->
             addPolyline(results, googleMap)
             positionCamera(results.routes[overview], googleMap)
