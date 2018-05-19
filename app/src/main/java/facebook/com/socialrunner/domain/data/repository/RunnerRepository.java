@@ -12,10 +12,6 @@ public class RunnerRepository extends FirebaseRepository<Runner> {
         super(RUNNER_ENTITY_PATH);
     }
 
-    public void createUser() {
-        // Todo
-    }
-
     public void fetchByName(String name, ResultHandler<Runner> handler) {
         fetchByPath(RUNNER_ENTITY_PATH + "/" + name, handler);
     }

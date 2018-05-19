@@ -1,13 +1,9 @@
-package facebook.com.socialrunner.domain.service.route;
+package facebook.com.socialrunner.domain.service;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.MutableData;
-import com.google.firebase.database.Transaction;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -34,13 +30,26 @@ public class RouteService {
 
         ResultHandler<List<Route>> handler = new ResultHandler<>(onFetch);
         ResultHandler<Runner> runnerHandler = new ResultHandler<>(runner -> {
+
+            Iterator<String> routeIdsIterator = runner.getRouteIds().iterator();
+            List<Route> routes = new ArrayList<>();
+
+            ResultHandler<Route> routeHandler = new ResultHandler<>();
+            routeHandler.setOnDataChange(route -> {
+
+                routes.add(route);
+
+                if (routeIdsIterator.hasNext())
+                    routeRepository.fetchById(routeIdsIterator.next(), routeHandler);
+            });
+
+            if (routeIdsIterator.hasNext())
+                routeRepository.fetchById(routeIdsIterator.next(), routeHandler);
+
+            onFetch.accept(routes);
         });
 
         runnerRepository.fetchByName(username, runnerHandler);
-    }
-
-    public Route getRoute(String id) {
-        return null;
     }
 
     public void uploadNewRoute(String username, List<LatLng> waypoints) {
@@ -49,6 +58,8 @@ public class RouteService {
             Route route = new Route();
             List<RoutePoint> routePoints =
                     waypoints.stream().map(x -> new RoutePoint(x.latitude, x.longitude)).collect(Collectors.toList());
+
+            route.setRoutePoints(routePoints);
 
             routeRepository.create(route);
 

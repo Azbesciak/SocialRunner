@@ -9,7 +9,9 @@ import java.util.function.Consumer;
 import facebook.com.socialrunner.domain.data.entity.Entity;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResultHandler<T> {
