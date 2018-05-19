@@ -36,9 +36,8 @@ public abstract class FirebaseRepository<T extends Entity> {
             throw new IllegalStateException("Entity already saved");
 
         DatabaseReference newEntity = db.getReference(entityPath).push();
-
         entity.setId(newEntity.getKey());
-        newEntity.setValue(newEntity);
+        newEntity.setValue(entity);
     }
 
     public void update(T entity) {

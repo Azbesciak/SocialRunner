@@ -57,7 +57,9 @@ public class RouteService {
         ResultHandler<Runner> handler = new ResultHandler<>(runner -> {
             Route route = new Route();
             List<RoutePoint> routePoints =
-                    waypoints.stream().map(x -> new RoutePoint(x.latitude, x.longitude)).collect(Collectors.toList());
+                    waypoints.stream()
+                            .map(loc -> new RoutePoint(loc.latitude, loc.longitude))
+                            .collect(Collectors.toList());
 
             route.setRoutePoints(routePoints);
 

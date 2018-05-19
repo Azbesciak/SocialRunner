@@ -27,6 +27,7 @@ public class ResultHandler<T> {
 
         return new ValueEventListener() {
             @Override
+            @SuppressWarnings("unchecked")
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (onDataChange != null)
                     onDataChange.accept((T) dataSnapshot.getValue());

@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
+import facebook.com.socialrunner.domain.service.RouteService
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 import java.util.*
@@ -47,6 +48,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var username : String
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
+    private val remoteService by lazy { RouteService() }
 
     private val routeCreator by lazy {
         NewRouteCreator(map,
@@ -89,7 +91,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         sendRouteBtn.setOnClickListener {
-            routeCreator.send()
+            routeCreator.send(remoteService, username)
             sendRouteBtn.isEnabled = false
             stopAdding()
             NewRunDialog().setContext(applicationContext).setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
