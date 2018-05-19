@@ -37,6 +37,7 @@ import com.google.firebase.FirebaseApp
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 import java.util.*
+import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -184,7 +185,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 // Please refer to the GoogleSignInStatusCodes class reference for more information.
                 Log.w(auth, "signInResult:failed code=" + e.statusCode);
                 Toast.makeText(applicationContext, "Something went wrong, choosing random username.", LENGTH_SHORT).show()
-                username = "user_${Random().nextInt() % 1000000}"
+                username = "user_${abs(Random().nextInt() % 1000000)}"
+                return
             }
             account?.let{
                 username = it.email?.split("@")?.get(0) ?: "unknown_username"
