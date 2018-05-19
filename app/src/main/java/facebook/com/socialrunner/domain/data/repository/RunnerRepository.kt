@@ -9,8 +9,17 @@ class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
         fetchByPath("$RUNNER_ENTITY_PATH/$name", handler)
     }
 
-    companion object {
+    fun fetchLocation(username: String, handler: ResultHandler<String>) {
 
+        fetchByName(username, ResultHandler { runner ->
+
+            runner?.let {
+                fetchByPath(getPathWithId(runner.id!!) + "username", handler)
+            }
+        })
+    }
+
+    companion object {
         private const val RUNNER_ENTITY_PATH = "runners"
     }
 }
