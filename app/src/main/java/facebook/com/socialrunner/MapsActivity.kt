@@ -29,6 +29,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.FirebaseApp
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 
@@ -80,6 +81,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         var gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        FirebaseApp.initializeApp(this)
     }
 
     override fun onStart() {
@@ -90,6 +93,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun updateUI(account: GoogleSignInAccount?) {
         Log.i(auth, "${account.toString()} is singed"  )
+
         if (account == null)
             signIn()
     }
@@ -131,6 +135,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
             var user = getUsername(this)
             Log.i(auth, "user is ${user}");
+            firebaseInit()
         }
     }
 
