@@ -7,6 +7,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 class NewRouteCreator(val googleMap: GoogleMap, var waypoints: MutableList<LatLng> = mutableListOf(), var startTime: Long = 0, private var canSend: Boolean = false) {
     init {
         googleMap.setOnMapClickListener { point ->
+            if (!canSend) return@setOnMapClickListener
             val marker = MarkerOptions().position(point)
             googleMap.addMarker(marker)
             waypoints.add(point)

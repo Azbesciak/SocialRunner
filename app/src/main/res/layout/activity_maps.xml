@@ -42,6 +42,7 @@
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/sendRouteBtn"
+        app:backgroundTint="@color/acceptColor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
@@ -51,7 +52,7 @@
         android:clickable="true"
         android:focusable="true"
         android:rotation="0"
-        android:src="@drawable/ic_add_white_36dp" />
+        android:src="@drawable/ic_done_white_36dp" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/cancelRouteBtn"
@@ -64,6 +65,6 @@
         android:clickable="true"
         android:focusable="true"
         android:rotation="0"
-        android:src="@drawable/ic_add_white_36dp" />
+        android:src="@drawable/ic_close_white_36dp" />
 
 </android.support.design.widget.CoordinatorLayout>
