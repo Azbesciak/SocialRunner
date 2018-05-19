@@ -23,9 +23,7 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         googleMap.setOnMapClickListener { point ->
             launch(UI) {
                 if (!canSend) return@launch
-                val marker = point.marker()
-                googleMap.addMarker(marker)
-                waypoints.add(point)
+                addPoint(point)
                 onRouteChangeListener(waypoints)
                 drawWaypoints()
             }
@@ -49,6 +47,12 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
             }
             true
         }
+    }
+
+    fun addPoint(point: LatLng) {
+        val marker = point.marker()
+        googleMap.addMarker(marker)
+        waypoints.add(point)
     }
 
     private fun LatLng.marker() = MarkerOptions().position(this)!!
