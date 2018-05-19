@@ -92,7 +92,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             routeCreator.send()
             sendRouteBtn.isEnabled = false
             stopAdding()
-            NewRunDialog().setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
+            NewRunDialog().setContext(applicationContext).setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
         }
 
         cancelRouteBtn.setOnClickListener {
@@ -101,13 +101,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
 
-    private fun startRun()
+    private fun startRun(pace : Double)
     {
-        Log.i("run", "started")
+        Log.i("run", "pace is $pace")
+
     }
 
-    private fun postponeRun()
+    private fun postponeRun(pace : Double)
     {
+        Log.i("run", "pace is $pace")
         TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
     }
 
@@ -136,6 +138,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onStart() {
         super.onStart()
         val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
+        Log.i(auth, "${account}")
         if (account == null) {
             signIn()
         } else {
