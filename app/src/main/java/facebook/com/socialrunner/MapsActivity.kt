@@ -180,13 +180,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         if (requestCode == RC_SIGN_IN) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            var account : GoogleSignInAccount? = null
+            val account: GoogleSignInAccount?
             try {
                 account = task.getResult(ApiException::class.java)
             } catch (e : ApiException) {
                 // The ApiException status code indicates the detailed failure reason.
                 // Please refer to the GoogleSignInStatusCodes class reference for more information.
-                Log.w(auth, "signInResult:failed code=" + e.statusCode);
+                Log.w(auth, "signInResult:failed code=" + e.statusCode)
                 Toast.makeText(applicationContext, "Something went wrong, choosing random username.", LENGTH_SHORT).show()
                 username = "user_${abs(Random().nextInt() % 1000000)}"
                 return
@@ -194,11 +194,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             account?.let{
                 username = it.email?.split("@")?.get(0) ?: "unknown_username"
                 Log.i(auth, "sign in method, user is $username")
-                return
+            } ?: run {
+                Toast.makeText(applicationContext, "Please choose an account.", LENGTH_SHORT).show()
+                signIn()
             }
-            Toast.makeText(applicationContext, "Please choose an account.", LENGTH_SHORT).show()
-            signIn()
-
         }
     }
 
@@ -292,10 +291,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun createLocationRequest() {
-        locationRequest = LocationRequest()
-        locationRequest.interval = 10000
-        locationRequest.fastestInterval = 5000
-        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        locationRequest = LocationRequest().apply {
+            interval = 10000
+            fastestInterval = 5000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
 
         val builder = LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest)
