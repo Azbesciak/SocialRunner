@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Route extends Entity {
-
+    private Double Pace;
+    private Integer StartHour;
+    private Integer StartMinute;
     private List<RoutePoint> routePoints;
 }

@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
+import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.service.RouteService
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
@@ -87,8 +88,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         FirebaseApp.initializeApp(this)
 
-        ActivityCompat.requestPermissions(this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+//        ActivityCompat.requestPermissions(this,
+//                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
 
 
     }
@@ -100,7 +101,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         sendRouteBtn.setOnClickListener {
-            routeCreator.send(routeService, username)
             sendRouteBtn.isEnabled = false
             stopAdding()
             NewRunDialog().setContext(applicationContext).setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
@@ -114,12 +114,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun startRun(pace : Double)
     {
+        this.pace = pace
+        val route = Route()
+        val c = Calendar.getInstance()
+        route.startHour = c.get(Calendar.HOUR_OF_DAY)
+        route.startMinute = c.get(Calendar.MINUTE)
+        route.pace = pace
         Log.i("run", "pace is $pace")
-
+        routeCreator.send(routeService, route ,username)
     }
-
+    private var pace = 0.0
     private fun postponeRun(pace : Double)
     {
+        this.pace = pace
         Log.i("run", "pace is $pace")
         TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
     }
@@ -127,6 +134,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun runTimePicked(hour : Int, minute : Int)
     {
         Log.i("run", "run time is set to ${hour}:${minute}")
+        val route = Route()
+        val c = Calendar.getInstance()
+        route.startHour = hour
+        route.startMinute = minute
+        route.pace = this.pace
+        routeCreator.send(routeService, route ,username)
     }
 
     private fun startAdding() {

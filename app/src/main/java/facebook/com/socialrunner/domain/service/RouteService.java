@@ -52,7 +52,7 @@ public class RouteService {
         runnerRepository.fetchByName(username, runnerHandler);
     }
 
-    public void uploadNewRoute(String username, List<LatLng> waypoints) {
+    public void uploadNewRoute(String username, Route routeDetails, List<LatLng> waypoints) {
 
         ResultHandler<Runner> handler = new ResultHandler<>(runner -> {
             Route route = new Route();
@@ -62,7 +62,9 @@ public class RouteService {
                             .collect(Collectors.toList());
 
             route.setRoutePoints(routePoints);
-
+            route.setPace(routeDetails.getPace());
+            route.setStartHour(routeDetails.getStartHour());
+            route.setStartMinute(routeDetails.getStartMinute());
             routeRepository.create(route);
             if (runner != null) {
                 runner.getRouteIds().add(route.getId());

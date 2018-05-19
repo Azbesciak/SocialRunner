@@ -4,6 +4,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.model.TravelMode
+import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.service.RouteService
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
@@ -63,8 +64,8 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         }
     }
 
-    fun send(routeService: RouteService, userName: String) {
-        routeService.uploadNewRoute(userName, waypoints.toList())
+    fun send(routeService: RouteService, route: Route, username : String) {
+        routeService.uploadNewRoute(username, route, waypoints.toList())
         googleMap.clear()
     }
 
