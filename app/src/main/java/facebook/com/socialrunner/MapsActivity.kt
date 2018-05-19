@@ -1,17 +1,20 @@
 package facebook.com.socialrunner
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.location.LocationManager
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -32,6 +35,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
+import java.net.Authenticator
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
@@ -46,6 +50,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private var locationUpdateState = false
 
     private lateinit var mGoogleSignInClient : GoogleSignInClient
+    private val gpsManager = GPSManager(::getPosition)
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -87,23 +92,31 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     override fun onStart() {
         super.onStart()
-        var account = GoogleSignIn.getLastSignedInAccount(this)
-        updateUI(account)
-    }
-
-    private fun updateUI(account: GoogleSignInAccount?) {
-        Log.i(auth, "${account.toString()} is singed"  )
-
-        if (account == null)
+        val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
+        if(account == null)
+        {
             signIn()
+        }else
+        {
+            username = account.email?.split("@")?.get(0) ?:  "unknown_username"
+            Log.i(auth, "saved authenticated user is ${username}")
+        }
+
+        gpsManager.getPosition(this)
     }
+
     val RC_SIGN_IN = 1000
+    val auth = "auth"
     private fun signIn() {
         val signInIntent = mGoogleSignInClient.getSignInIntent()
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-    val auth = "auth"
+    fun getPosition(location: Location)
+    {
+        Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CHECK_SETTINGS) {
@@ -124,18 +137,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         if(requestCode==RC_SIGN_IN)
         {
-            if(resultCode == Activity.RESULT_OK)
-            {
-                Log.i(auth, "")
-            }
-            else
-            {
-                Log.i(auth, "result code is ${resultCode}")
-            }
-
-            var user = getUsername(this)
-            Log.i(auth, "user is ${user}");
-            firebaseInit()
+            getUsername(this)
+            Log.i(auth, "sign in method, user is ${username}");
         }
     }
 

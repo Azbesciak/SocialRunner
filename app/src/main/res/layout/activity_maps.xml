@@ -29,5 +29,14 @@
         android:layout_marginRight="8dp"
         android:src="@drawable/ic_add_white_36dp" />
 
+    <Button
+        android:id="@+id/gps_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="getGPS"
+        android:text="Button"
+        tools:layout_editor_absoluteX="180dp"
+        tools:layout_editor_absoluteY="313dp" />
+
 
 </android.support.constraint.ConstraintLayout>
