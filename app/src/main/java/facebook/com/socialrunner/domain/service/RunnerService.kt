@@ -9,7 +9,7 @@ class RunnerService {
 
     fun registerRunner(username: String) {
 
-        val runner = Runner(name =username, routeIds = mutableListOf())
+        val runner = Runner(name = username, routeIds = mutableListOf())
         runnerRepository.create(runner)
     }
 }
