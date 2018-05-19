@@ -3,8 +3,13 @@ package facebook.com.socialrunner.domain.service;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -26,27 +31,22 @@ public class RouteService {
         this.runnerRepository = new RunnerRepository();
     }
 
-    public void getRoutesForUser(String username, Consumer<List<Route>> onFetch) {
+    public void getRoutesForUser(String username, Consumer<Collection<Route>> onFetch) {
 
-        ResultHandler<List<Route>> handler = new ResultHandler<>(onFetch);
         ResultHandler<Runner> runnerHandler = new ResultHandler<>(runner -> {
 
             Iterator<String> routeIdsIterator = runner.getRouteIds().iterator();
-            List<Route> routes = new ArrayList<>();
+            Map<String, Route> routes = new HashMap<>();
 
-            ResultHandler<Route> routeHandler = new ResultHandler<>();
-            routeHandler.setOnDataChange(route -> {
+            for (String routeId : runner.getRouteIds()) {
 
-                routes.add(route);
-
-                if (routeIdsIterator.hasNext())
-                    routeRepository.fetchById(routeIdsIterator.next(), routeHandler);
-            });
-
-            if (routeIdsIterator.hasNext())
-                routeRepository.fetchById(routeIdsIterator.next(), routeHandler);
-
-            onFetch.accept(routes);
+                routeRepository.fetchById(routeId, new ResultHandler<Route>(route -> {
+                    synchronized (routes) {
+                        routes.put(routeId, route);
+                        onFetch.accept(routes.values());
+                    }
+                }));
+            }
         });
 
         runnerRepository.fetchByName(username, runnerHandler);
