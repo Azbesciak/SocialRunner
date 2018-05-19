@@ -37,7 +37,7 @@ class RouteService {
 
         val handler = ResultHandler<Runner> { runner ->
             route.apply {
-                route.routePoints += parseCoordinates(waypoints)
+                route.routePoints.addAll(parseCoordinates(waypoints))
             }
             routeRepository.create(route)
 

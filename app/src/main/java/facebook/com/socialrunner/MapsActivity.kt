@@ -79,6 +79,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        ActivityCompat.requestPermissions(this,
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         initButtons()
@@ -87,8 +91,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         FirebaseApp.initializeApp(this)
 
-//        ActivityCompat.requestPermissions(this,
-//                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
 
 
     }
@@ -349,5 +351,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         } catch (e: GooglePlayServicesNotAvailableException) {
             e.printStackTrace()
         }
+    }
+
+    private fun loadActiveRoutes(){
+        
     }
 }
