@@ -11,11 +11,15 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
@@ -32,13 +36,14 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
+import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var lastLocation: Location
-
+    private lateinit var username : String
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
 
@@ -170,16 +175,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         if (requestCode == RC_SIGN_IN) {
-            if (resultCode == Activity.RESULT_OK) {
-                Log.i(auth, "")
-            } else {
-                Log.i(auth, "result code is $resultCode")
+            var task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            var account : GoogleSignInAccount? = null
+            try {
+                account = task.getResult(ApiException::class.java)
+            } catch (e : ApiException) {
+                // The ApiException status code indicates the detailed failure reason.
+                // Please refer to the GoogleSignInStatusCodes class reference for more information.
+                Log.w(auth, "signInResult:failed code=" + e.getStatusCode());
+                Toast.makeText(applicationContext, "Something went wrong, choosing random username.", LENGTH_SHORT)
+                username = "user_${Random().nextInt() % 1000000}"
             }
+            account?.let{
+                username = it.email?.split("@")?.get(0) ?: "unknown_username"
+                Log.i(auth, "sign in method, user is ${username}");
+                return
+            }
+            Toast.makeText(applicationContext, "Please choose an account.", LENGTH_SHORT).show()
+            signIn()
 
-            var user = getUsername(this)
-            Log.i(auth, "user is ${user}");
-            getUsername(this)
-            Log.i(auth, "sign in method, user is ${username}");
         }
     }
 
