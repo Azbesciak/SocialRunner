@@ -12,6 +12,11 @@ import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.widget.Button
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.common.api.ResolvableApiException
@@ -24,6 +29,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 
 
@@ -37,6 +43,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
+
+    private lateinit var mGoogleSignInClient : GoogleSignInClient
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -69,8 +77,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         fab.setOnClickListener {
             loadPlacePicker()
         }
+
+        var gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
+    override fun onStart() {
+        super.onStart()
+        var account = GoogleSignIn.getLastSignedInAccount(this)
+        updateUI(account)
+    }
+
+    private fun updateUI(account: GoogleSignInAccount?) {
+        Log.i(auth, "${account.toString()} is singed"  )
+        if (account == null)
+            signIn()
+    }
+    val RC_SIGN_IN = 1000
+    private fun signIn() {
+        val signInIntent = mGoogleSignInClient.getSignInIntent()
+        startActivityForResult(signInIntent, RC_SIGN_IN)
+    }
+
+    val auth = "auth"
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CHECK_SETTINGS) {
@@ -87,6 +116,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
                 placeMarkerOnMap(place.latLng)
             }
+        }
+
+        if(requestCode==RC_SIGN_IN)
+        {
+            if(resultCode == Activity.RESULT_OK)
+            {
+                Log.i(auth, "")
+            }
+            else
+            {
+                Log.i(auth, "result code is ${resultCode}")
+            }
+
+            var user = getUsername(this)
+            Log.i(auth, "user is ${user}");
         }
     }
 
