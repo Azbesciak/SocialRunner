@@ -103,7 +103,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             routeCreator.send(routeService, username)
             sendRouteBtn.isEnabled = false
             stopAdding()
-            NewRunDialog().setContext(applicationContext).setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
+            NewRunDialog().setContext(applicationContext)
+                    .setCallbacks(::startRun, ::postponeRun)
+                    .show(fragmentManager, "some not important tag")
         }
 
         cancelRouteBtn.setOnClickListener {
@@ -230,11 +232,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
      * installed Google Play services and returned to the app.
      */
     override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
-
-        map.uiSettings.isZoomControlsEnabled = true
-        map.setOnMarkerClickListener(this)
-
+        map = googleMap.apply {
+            uiSettings.isZoomControlsEnabled = true
+            setOnMarkerClickListener(this@MapsActivity)
+        }
         setUpMap()
     }
 
@@ -263,12 +264,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun placeMarkerOnMap(location: LatLng) {
-        val markerOptions = MarkerOptions().position(location)
-
-        val titleStr = getAddress(location)  // add these two lines
-        markerOptions.title(titleStr)
-        routeCreator.waypoints.add(location)
-        map.addMarker(markerOptions)
+        routeCreator.addPoint(location)
     }
 
     private fun getAddress(latLng: LatLng): String {
