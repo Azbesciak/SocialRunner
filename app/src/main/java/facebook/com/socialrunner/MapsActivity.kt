@@ -206,16 +206,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun getAddress(latLng: LatLng): String {
-        // 1
         val geocoder = Geocoder(this)
         val addresses: List<Address>?
         val address: Address?
         var addressText = ""
 
         try {
-            // 2
             addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-            // 3
             if (null != addresses && !addresses.isEmpty()) {
                 address = addresses[0]
                 for (i in 0 until address.maxAddressLineIndex) {
