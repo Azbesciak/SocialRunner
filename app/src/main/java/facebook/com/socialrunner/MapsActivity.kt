@@ -38,14 +38,12 @@ import java.io.IOException
 import java.net.Authenticator
 
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
-        GoogleMap.OnMarkerClickListener {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var lastLocation: Location
 
-    private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
 
@@ -68,25 +66,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(p0: LocationResult) {
-                super.onLocationResult(p0)
-
-                lastLocation = p0.lastLocation
-                placeMarkerOnMap(LatLng(lastLocation.latitude, lastLocation.longitude))
-            }
-        }
-
         createLocationRequest()
 
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setOnClickListener {
-            loadPlacePicker()
+//            loadPlacePicker()
         }
 
         var gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-
         FirebaseApp.initializeApp(this)
     }
 
@@ -137,15 +125,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         if(requestCode==RC_SIGN_IN)
         {
+            if(resultCode == Activity.RESULT_OK)
+            {
+                Log.i(auth, "")
+            }
+            else
+            {
+                Log.i(auth, "result code is ${resultCode}")
+            }
+
+            var user = getUsername(this)
+            Log.i(auth, "user is ${user}");
             getUsername(this)
             Log.i(auth, "sign in method, user is ${username}");
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
 
     public override fun onResume() {
         super.onResume()
@@ -234,7 +229,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                     LOCATION_PERMISSION_REQUEST_CODE)
             return
         }
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null /* Looper */)
     }
 
     private fun createLocationRequest() {
