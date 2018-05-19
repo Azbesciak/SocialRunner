@@ -43,7 +43,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
 
-    private val routeCreator by lazy { NewRouteCreator(map) }
+    private val routeCreator by lazy { NewRouteCreator(map, {
+        route -> sendRouteBtn.isEnabled = route.isNotEmpty()
+    }) }
     private lateinit var mGoogleSignInClient : GoogleSignInClient
     private val gpsManager = GPSManager(::getPosition)
 
@@ -78,6 +80,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         sendRouteBtn.setOnClickListener {
             routeCreator.send()
+            sendRouteBtn.isEnabled = false
             stopAdding()
         }
 
@@ -87,6 +90,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun startAdding() {
+        sendRouteBtn.isEnabled = false
         routeCreator.initialize()
         sendRouteBtn.show()
         cancelRouteBtn.show()
