@@ -68,8 +68,8 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         }
     }
 
-    fun send(routeService: RouteService, route: Route, username : String) {
-        routeService.uploadNewRoute(username, route, waypoints.toList())
+    fun send(routeService: RouteService, route: Route, userName: String) {
+        routeService.uploadNewRoute(userName, route, waypoints.toMutableList())
         googleMap.clear()
     }
 

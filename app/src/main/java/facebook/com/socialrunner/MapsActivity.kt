@@ -32,7 +32,6 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.service.RouteService
@@ -135,12 +134,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun runTimePicked(hour : Int, minute : Int)
     {
-        Log.i("run", "run time is set to ${hour}:${minute}")
-        val route = Route()
-        val c = Calendar.getInstance()
-        route.startHour = hour
-        route.startMinute = minute
-        route.pace = this.pace
+        Log.i("run", "run time is set to $hour:$minute")
+        val route = Route(startHour = hour, startMinute = minute, pace = pace)
         routeCreator.send(routeService, route ,username)
     }
 
@@ -272,6 +267,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 placeMarkerOnMap(currentLatLng)
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+                routeService
             }
         }
     }
