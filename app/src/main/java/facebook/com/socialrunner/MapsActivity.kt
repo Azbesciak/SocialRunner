@@ -45,10 +45,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var lastLocation: Location
-    private lateinit var username : String
+    private lateinit var _username: String
+    private var username : String
+        get() = _username
+        set(value) {
+            _username = value
+        }
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
-    private val remoteService by lazy { RouteService() }
+    private val routeService by lazy { RouteService() }
 
     private val routeCreator by lazy {
         NewRouteCreator(map,
@@ -91,7 +96,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         sendRouteBtn.setOnClickListener {
-            routeCreator.send(remoteService, username)
+            routeCreator.send(routeService, username)
             sendRouteBtn.isEnabled = false
             stopAdding()
             NewRunDialog().setContext(applicationContext).setCallbacks(::startRun, ::postponeRun).show(fragmentManager, "some not important tag")
@@ -140,12 +145,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onStart() {
         super.onStart()
         val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
-        Log.i(auth, "${account}")
+        Log.i(auth, "$account")
         if (account == null) {
             signIn()
         } else {
             username = account.email?.split("@")?.get(0) ?: "unknown_username"
-            Log.i(auth, "saved authenticated user is ${username}")
+            Log.i(auth, "saved authenticated user is $username")
         }
 
         gpsManager.getPosition(this)
@@ -200,6 +205,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Toast.makeText(applicationContext, "Please choose an account.", LENGTH_SHORT).show()
                 signIn()
             }
+
         }
     }
 

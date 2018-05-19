@@ -64,9 +64,10 @@ public class RouteService {
             route.setRoutePoints(routePoints);
 
             routeRepository.create(route);
-
-            runner.getRouteIds().add(route.getId());
-            runnerRepository.update(runner);
+            if (runner != null) {
+                runner.getRouteIds().add(route.getId());
+                runnerRepository.update(runner);
+            }
         });
 
         runnerRepository.fetchByName(username, handler);
