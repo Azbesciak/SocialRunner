@@ -7,7 +7,7 @@ import facebook.com.socialrunner.domain.data.entity.Entity
 
 abstract class FirebaseRepository<T : Entity>(private val entityPath: String) {
 
-    private var db: FirebaseDatabase = FirebaseDatabase.getInstance()
+    protected var db: FirebaseDatabase = FirebaseDatabase.getInstance()
 
     protected fun <R> fetchByPath(path: String, handler: ResultHandler<R>) {
         val query = db.getReference(path)
