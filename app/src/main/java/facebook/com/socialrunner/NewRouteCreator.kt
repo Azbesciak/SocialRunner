@@ -2,6 +2,7 @@ package facebook.com.socialrunner
 
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.model.TravelMode
 import facebook.com.socialrunner.domain.data.entity.Route
@@ -49,16 +50,20 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         }
     }
 
-    fun addPoint(point: LatLng) {
+    fun addPoint(point: LatLng) : MarkerOptions {
         val marker = point.marker()
         googleMap.addMarker(marker)
         waypoints.add(point)
+        return marker
     }
 
     fun removeMarker(point : LatLng)
     {
         if(waypoints.contains(point))
+        {
             waypoints.remove(point)
+        }
+
     }
     private fun LatLng.marker() = MarkerOptions().position(this)!!
 

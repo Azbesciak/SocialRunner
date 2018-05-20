@@ -8,7 +8,6 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
-import android.provider.Contacts
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
@@ -33,7 +32,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.data.entity.Position
@@ -50,7 +49,6 @@ import kotlinx.coroutines.experimental.launch
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.jar.Manifest
 import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -197,12 +195,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onStart() {
         super.onStart()
-
-        var mapsActivity = this
-        launch(UI){
-            var runner  = MockRunner(mapsActivity)
-            var runner2 = MockRunner(mapsActivity)
-        }
+        gpsManager.getPosition(this)
 
         val user = localStorage.loadUser()
         if (user == null) {
@@ -218,7 +211,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         } else {
             username = user.name!!
         }
-        gpsManager.getPosition(this)
+
+        launch (UI )
+        {
+            while(!fetchedPosition)
+            {
+                delay(100)
+            }
+
+            routeService.getQueriesInArea(firstPositionOnMap, ::running)
+        }
     }
 
     private val RC_SIGN_IN = 1000
@@ -227,7 +229,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
+    var namesMap = hashMapOf<String>()
+    fun running(route : Route)
+    {
+        var mapsActivity = this
+        launch(UI){
+            var runner  = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
+            delay(3000)
+            runner.run()
+        }
+    }
+
+    var fetchedPosition = false
+    lateinit var firstPositionOnMap : LatLng
     private fun newPosition(location: Location) {
+        if(!fetchedPosition)
+        {
+            firstPositionOnMap = LatLng(location.latitude, location.longitude)
+            fetchedPosition = true
+        }
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
        // runnerService.updateRunnerLocation(username, Position(latitude = location.latitude, longitude = location.longitude))
     }
@@ -318,39 +338,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (location != null) {
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
-                placeMarkerOnMap(currentLatLng)
-                searchForNearbyRoutes(currentLatLng)
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
-                routeService
-            }
-        }
-    }
+            placeMarkerOnMap(currentLatLng)
+            searchForNearbyRoutes(currentLatLng)
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+            routeService
+}
+}
+}
 
-    private fun searchForNearbyRoutes(currentLatLng: LatLng) {
-        otherRoutes.clear()
-        launch {
-            routeService.getQueriesInArea(currentLatLng) { route ->
-                launch {
-                    route.toWayPoints().getRouteOnMap(map, apiKey) {
-                        first.color = colors[randGen.nextInt(colors.size)]
-                        otherRoutes.add(second to first.color)
-                    }
+private fun searchForNearbyRoutes(currentLatLng: LatLng) {
+    otherRoutes.clear()
+    launch {
+        routeService.getQueriesInArea(currentLatLng) { route ->
+            launch {
+                route.toWayPoints().getRouteOnMap(map, apiKey) {
+                    first.color = colors[randGen.nextInt(colors.size)]
+                    otherRoutes.add(second to first.color)
                 }
             }
         }
     }
+}
 
-    private fun drawLines() {
-        otherRoutes.forEach { map.addPolyline(it.first).color = it.second }
-    }
+private fun drawLines() {
+    otherRoutes.forEach { map.addPolyline(it.first).color = it.second }
+}
 
-    public fun placeMarkerOnMap(location: LatLng) {
-        routeCreator.addPoint(location)
-    }
-
-    public fun removeMarker(position : LatLng)
-    {
-        removeMarker(position)
+    fun placeMarkerOnMap(location: LatLng) : MarkerOptions {
+        return routeCreator.addPoint(location)
     }
 
     private fun getAddress(latLng: LatLng): String {
