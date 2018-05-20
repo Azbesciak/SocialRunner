@@ -35,6 +35,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.service.RouteService
+import facebook.com.socialrunner.domain.service.RunnerService
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 import java.util.*
@@ -54,7 +55,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
-
+    private val runnerService by lazy { RunnerService() }
     private val routeCreator by lazy {
         NewRouteCreator(map,
                 getString(R.string.google_api_key),
@@ -212,6 +213,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Log.w(auth, "signInResult:failed code=" + e.statusCode)
                 Toast.makeText(applicationContext, "Something went wrong, choosing random username.", LENGTH_SHORT).show()
                 username = "user_${abs(Random().nextInt() % 1000000)}"
+                runnerService.registerRunner(username)
                 return
             }
             account?.let{
