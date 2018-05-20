@@ -1,7 +1,6 @@
 package facebook.com.socialrunner
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
@@ -9,6 +8,7 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
+import android.provider.Contacts
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
@@ -43,6 +43,9 @@ import facebook.com.socialrunner.domain.service.RouteService
 import facebook.com.socialrunner.domain.service.RunnerService
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import java.io.IOException
 import java.util.*
@@ -62,7 +65,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             _username = value
         }
     private lateinit var locationRequest: LocationRequest
-    private lateinit var localStorage: LocalStorageManager
+    private lateinit var localStorage : LocalStorageManager
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
     private val runnerService by lazy { RunnerService() }
@@ -106,9 +109,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         FirebaseApp.initializeApp(this)
         localStorage = LocalStorageManager("user_data", applicationContext)
+
     }
 
     private fun initButtons() {
+        FirstModalDialog().setContext(applicationContext).
+                setCallbacks(::stopAdding,::joinMode).show(fragmentManager, "tag")
+
         stopAdding()
         createRouteBtn.setOnClickListener {
             startAdding()
@@ -177,8 +184,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         createRouteBtn.show()
     }
 
+    private fun joinMode() {
+        sendRouteBtn.hide()
+        cancelRouteBtn.hide()
+        createRouteBtn.hide()
+    }
+
+    private fun changePos(pos : Position)
+    {
+        Log.i("pos", "New position is ${pos.longitude} ${pos.latitude}")
+    }
+
     override fun onStart() {
         super.onStart()
+
+        var mapsActivity = this
+        launch(UI){
+            var runner  = MockRunner(mapsActivity)
+            var runner2 = MockRunner(mapsActivity)
+        }
+
         val user = localStorage.loadUser()
         if (user == null) {
             val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
@@ -319,8 +344,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         otherRoutes.forEach { map.addPolyline(it.first).color = it.second }
     }
 
-    private fun placeMarkerOnMap(location: LatLng) {
+    public fun placeMarkerOnMap(location: LatLng) {
         routeCreator.addPoint(location)
+    }
+
+    public fun removeMarker(position : LatLng)
+    {
+        removeMarker(position)
     }
 
     private fun getAddress(latLng: LatLng): String {

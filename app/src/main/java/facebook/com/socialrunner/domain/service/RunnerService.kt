@@ -1,5 +1,8 @@
 package facebook.com.socialrunner.domain.service
 
+import android.util.Log
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.FirebaseDatabase
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Runner
 import facebook.com.socialrunner.domain.data.repository.ResultHandler

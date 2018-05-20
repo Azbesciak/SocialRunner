@@ -55,6 +55,11 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         waypoints.add(point)
     }
 
+    fun removeMarker(point : LatLng)
+    {
+        if(waypoints.contains(point))
+            waypoints.remove(point)
+    }
     private fun LatLng.marker() = MarkerOptions().position(this)!!
 
     private fun drawWaypoints() {
