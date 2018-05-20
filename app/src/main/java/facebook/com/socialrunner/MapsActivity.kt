@@ -256,13 +256,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
+    val coroutineLimit = 2
+    var current = 0
     fun running(route : Route)
     {
+        if(coroutineLimit < current)
+            return
+        current += 1
         var mapsActivity = this
         launch(UI){
+            Log.i("asd", "${current}")
             var runner  = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
             delay(3000)
-            runner.run()
+            //runner.run()
         }
     }
 
@@ -384,7 +390,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                showToast(find.route.id!!)
+                showToast(find.route.pace.toString())
             }
         }
     }
