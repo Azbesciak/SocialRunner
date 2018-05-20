@@ -33,6 +33,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.FirebaseApp
+import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.service.RouteService
 import facebook.com.socialrunner.domain.service.RunnerService
@@ -181,6 +182,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun newPosition(location: Location) {
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
+        runnerService.updateRunnerLocation(username, Position(latitude = location.latitude, longitude = location.longitude))
     }
 
     private val auth = "auth"

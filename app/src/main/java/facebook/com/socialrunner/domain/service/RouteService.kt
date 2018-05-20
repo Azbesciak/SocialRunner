@@ -1,7 +1,7 @@
 package facebook.com.socialrunner.domain.service
 
 import com.google.android.gms.maps.model.LatLng
-import facebook.com.socialrunner.domain.data.entity.Location
+import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.RoutePoint
 import facebook.com.socialrunner.domain.data.entity.Runner
@@ -52,6 +52,6 @@ class RouteService {
     }
 
     private fun parseCoordinates(coordinates: MutableList<LatLng>) =
-            coordinates.map { RoutePoint(loc = Location(it.latitude, it.longitude)) }
+            coordinates.map { RoutePoint(loc = Position(it.latitude, it.longitude)) }
                     .toMutableList()
 }
