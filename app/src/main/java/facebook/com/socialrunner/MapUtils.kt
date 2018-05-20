@@ -93,7 +93,7 @@ fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTi
         getDirectionsDetails(TravelMode.WALKING, startTime, apiKey)?.let { results ->
             launch(UI) {
                 with(map) {
-                    createPolyline(results)?.polConsumer()
+                    createPolyline(results).polConsumer()
                 }
             }
             results
