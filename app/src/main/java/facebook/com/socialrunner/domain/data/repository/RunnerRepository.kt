@@ -15,7 +15,7 @@ class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
         fetchByName(username, ResultHandler { runner ->
 
             runner?.let {
-                fetchByPath(getPathWithId(runner.id!!) + "username", handler)
+                fetchByField(getPathWithId(runner.id!!) + "/name", username, handler)
             }
         })
     }

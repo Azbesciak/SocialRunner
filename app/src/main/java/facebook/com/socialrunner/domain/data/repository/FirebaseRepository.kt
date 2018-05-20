@@ -14,6 +14,11 @@ abstract class FirebaseRepository<T : Entity>(private val entityPath: String) {
         query.addValueEventListener(handler.asListener())
     }
 
+    protected fun <R, F> fetchByField(fieldPath: String, value: F, handler: ResultHandler<R>) {
+        val query = db.getReference(fieldPath).equalTo(value.toString())
+        query.addValueEventListener(handler.asListener())
+    }
+
     protected fun <R> fetchByPath(path: String, handler: ResultHandler<R>, mapper: (DatabaseReference) -> DatabaseReference) {
         var query = db.getReference(path)
         query = mapper(query)
