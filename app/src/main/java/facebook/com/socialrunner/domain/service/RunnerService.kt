@@ -16,15 +16,15 @@ class RunnerService {
         runnerRepository.create(runner)
     }
 
-    fun getRunnerPosition(username : String, handler : ResultHandler<Position>) {
-        runnerRepository.fetchPosition(username, handler)
+    fun getRunnerPosition(username : String, handler : ResultHandler<String>) {
+        runnerRepository.fetchLocation(username, handler)
     }
 
     fun updateRunnerLocation(username: String, loc: Position) {
         if (!runnerNameIdCache.containsKey(username)) {
             runnerRepository.fetchByName(username, ResultHandler { runner ->
                 runnerNameIdCache[username] = runner?.id!!
-                updateLocationById(runner?.id!!, loc)
+                updateLocationById(runner.id!!, loc)
             })
         } else {
             updateLocationById(runnerNameIdCache[username]!!, loc)

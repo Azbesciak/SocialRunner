@@ -20,15 +20,15 @@ class LocalStorageManager(val filename : String, val context: Context)
     }
 
     fun loadUser() : User? {
-        try{
+        return try {
             val data = InputStreamReader(context.openFileInput(filename)).readText().split(';')
             if(data.size >= 2)
-                return User(data[0], data[1].toDouble())
+                User(data[0], data[1].toDouble())
             else
-                return null
+                null
         }catch (e : IOException)
         {
-            return null
+            null
         }
     }
 

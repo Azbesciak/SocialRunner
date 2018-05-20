@@ -20,14 +20,13 @@ class RouteService {
 
     fun getQueriesInArea(loc: LatLng, onFetch: (Route) -> Unit) {
         val loca = location(loc)
-        val handler = ResultHandler<Map<String, Route>> { routes ->
+        val handler = ResultHandler<Map<String, Map<*, *>>> { routes ->
             routes?.let {
-                it.values.filter { it.routePoints.any { rp -> isInRange(rp, loca) } }
+//                it.values.map
+//                it.values.filter { it.routePoints.any { rp -> isInRange(rp, loca) } }
             }
         }
-        routeRepository.fetchFromRoutes(handler) {
-            it
-        }
+        routeRepository.fetchFromRoutes(handler)
     }
 
     private fun isInRange(rp: RoutePoint, base: Location): Boolean {
@@ -63,11 +62,9 @@ class RouteService {
     }
 
     fun uploadNewRoute(username: String, route: Route, waypoints: MutableList<LatLng>) {
+        route.routePoints.addAll(waypoints.toRoutePoints())
 
         val handler = ResultHandler<Runner> { runner ->
-            route.apply {
-                route.routePoints.addAll(waypoints.toRoutePoints())
-            }
             routeRepository.create(route)
 
             if (runner != null) {

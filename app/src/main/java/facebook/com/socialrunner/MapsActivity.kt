@@ -53,17 +53,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var lastLocation: Location
     private lateinit var _username: String
-    private var username : String
+    private var username: String
         get() = _username
         set(value) {
             _username = value
         }
     private lateinit var locationRequest: LocationRequest
-    private lateinit var localStorage : LocalStorageManager
+    private lateinit var localStorage: LocalStorageManager
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
     private val runnerService by lazy { RunnerService() }
-    private val apiKey by lazy {getString(R.string.google_api_key) }
+    private val apiKey by lazy { getString(R.string.google_api_key) }
 
     private val routeCreator by lazy {
         NewRouteCreator(map, apiKey,
@@ -119,12 +119,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         cancelRouteBtn.setOnClickListener {
+            disableSend()
             stopAdding()
         }
     }
 
-    private fun startRun(pace : Double)
-    {
+    private fun disableSend() {
+        if (::map.isInitialized) {
+            routeCreator.disable()
+        }
+    }
+
+    private fun startRun(pace: Double) {
         this.pace = pace
         val route = Route()
         val c = Calendar.getInstance()
@@ -133,22 +139,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         route.pace = pace
         Log.i("run", "pace is $pace")
         localStorage.saveUser(User(username, 0.0))
-        routeCreator.send(routeService, route ,username)
+        routeCreator.send(routeService, route, username)
+        disableSend()
     }
+
     private var pace = 0.0
-    private fun postponeRun(pace : Double)
-    {
+    private fun postponeRun(pace: Double) {
         this.pace = pace
         Log.i("run", "pace is $pace")
         localStorage.saveUser(User(username, 0.0))
         TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
     }
 
-    private fun runTimePicked(hour : Int, minute : Int)
-    {
+    private fun runTimePicked(hour: Int, minute: Int) {
         Log.i("run", "run time is set to $hour:$minute")
         val route = Route(startHour = hour, startMinute = minute, pace = pace)
-        routeCreator.send(routeService, route ,username)
+        routeCreator.send(routeService, route, username)
+        disableSend()
     }
 
     private fun startAdding() {
@@ -160,9 +167,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun stopAdding() {
-        if (::map.isInitialized) {
-            routeCreator.disable()
-        }
         sendRouteBtn.hide()
         cancelRouteBtn.hide()
         createRouteBtn.show()
@@ -171,8 +175,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onStart() {
         super.onStart()
         val user = localStorage.loadUser()
-        if(user == null)
-        {
+        if (user == null) {
             val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
             Log.i(auth, "$account")
             if (account == null) {
@@ -182,7 +185,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Log.i(auth, "saved authenticated user is $username")
                 localStorage.saveUser(User(username, 0.0))
             }
-        }else{
+        } else {
             username = user.name!!
         }
 
@@ -225,7 +228,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             val account: GoogleSignInAccount?
             try {
                 account = task.getResult(ApiException::class.java)
-            } catch (e : ApiException) {
+            } catch (e: ApiException) {
                 // The ApiException status code indicates the detailed failure reason.
                 // Please refer to the GoogleSignInStatusCodes class reference for more information.
                 Log.w(auth, "signInResult:failed code=" + e.statusCode)
@@ -234,7 +237,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 localStorage.saveUser(User(username, 0.0))
                 return
             }
-            account?.let{
+            account?.let {
                 username = it.email?.split("@")?.get(0) ?: "unknown_username"
                 Log.i(auth, "sign in method, user is $username")
                 localStorage.saveUser(User(username, 0.0))
@@ -242,7 +245,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Toast.makeText(applicationContext, "Please choose an account.", LENGTH_SHORT).show()
                 signIn()
             }
-
         }
     }
 
@@ -292,7 +294,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 launch {
                     routeService.getQueriesInArea(currentLatLng) { route ->
                         launch {
-                            route.toWayPoints().getRouteOnMap(map, apiKey)
+                            route.toWayPoints().getRouteOnMap(map, apiKey, randomColor = true)
                         }
                     }
                 }
@@ -381,7 +383,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    private fun loadActiveRoutes(){
-        
+    private fun loadActiveRoutes() {
+
     }
 }

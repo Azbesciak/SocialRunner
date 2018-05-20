@@ -8,12 +8,12 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 
-val locationProvider = LocationManager.GPS_PROVIDER
+const val locationProvider = LocationManager.GPS_PROVIDER
 
-class GPSManager(val newPositionCallback : (Location) -> Unit){
+class GPSManager(val newPositionCallback: (Location) -> Unit) {
 
     @SuppressLint("MissingPermission")
-    fun getPosition(mapsActivity: MapsActivity){
+    fun getPosition(mapsActivity: MapsActivity) {
         // Acquire a reference to the system Location Manager
         val locationManager = mapsActivity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 

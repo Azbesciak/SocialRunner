@@ -1,9 +1,6 @@
 package facebook.com.socialrunner.domain.data.repository
 
-import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.Query
-
 import facebook.com.socialrunner.domain.data.entity.Entity
 
 abstract class FirebaseRepository<T : Entity>(private val entityPath: String) {
@@ -17,12 +14,6 @@ abstract class FirebaseRepository<T : Entity>(private val entityPath: String) {
 
     protected fun <R, F> fetchByField(field: String, value: F, handler: ResultHandler<R>) {
         val query = db.getReference(entityPath).child(field).equalTo(value.toString())
-        query.addValueEventListener(handler.asListener())
-    }
-
-    protected fun <R> fetchByPath(path: String, handler: ResultHandler<R>, mapper: (DatabaseReference) -> DatabaseReference) {
-        var query = db.getReference(path)
-        query = mapper(query)
         query.addValueEventListener(handler.asListener())
     }
 
