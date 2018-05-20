@@ -1,6 +1,7 @@
 package facebook.com.socialrunner
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
@@ -34,11 +35,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.data.entity.Route
+import facebook.com.socialrunner.domain.data.localdata.User
 import facebook.com.socialrunner.domain.service.RouteService
 import facebook.com.socialrunner.domain.service.RunnerService
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.IOException
 import java.util.*
+import java.util.jar.Manifest
 import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -53,6 +56,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             _username = value
         }
     private lateinit var locationRequest: LocationRequest
+    private lateinit var localStorage : LocalStorageManager
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
     private val runnerService by lazy { RunnerService() }
@@ -82,6 +86,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         ActivityCompat.requestPermissions(this,
                 arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+        ActivityCompat.requestPermissions(this,
+                arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 2)
 
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -91,6 +97,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         FirebaseApp.initializeApp(this)
+        localStorage = LocalStorageManager("user_data", applicationContext)
 
 
 
@@ -125,6 +132,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         route.startMinute = c.get(Calendar.MINUTE)
         route.pace = pace
         Log.i("run", "pace is $pace")
+        localStorage.saveUser(User(username, 0.0))
         routeCreator.send(routeService, route ,username)
     }
     private var pace = 0.0
@@ -132,6 +140,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     {
         this.pace = pace
         Log.i("run", "pace is $pace")
+        localStorage.saveUser(User(username, 0.0))
         TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
     }
 
@@ -161,14 +170,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onStart() {
         super.onStart()
-        val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
-        Log.i(auth, "$account")
-        if (account == null) {
-            signIn()
-        } else {
-            username = account.email?.split("@")?.get(0) ?: "unknown_username"
-            Log.i(auth, "saved authenticated user is $username")
+        val user = localStorage.loadUser()
+        if(user == null)
+        {
+            val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
+            Log.i(auth, "$account")
+            if (account == null) {
+                signIn()
+            } else {
+                username = account.email?.split("@")?.get(0) ?: "unknown_username"
+                Log.i(auth, "saved authenticated user is $username")
+                localStorage.saveUser(User(username, 0.0))
+            }
+        }else{
+            username = user.name!!
         }
+
 
         gpsManager.getPosition(this)
     }
@@ -213,12 +230,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Log.w(auth, "signInResult:failed code=" + e.statusCode)
                 Toast.makeText(applicationContext, "Something went wrong, choosing random username.", LENGTH_SHORT).show()
                 username = "user_${abs(Random().nextInt() % 1000000)}"
-                runnerService.registerRunner(username)
+                localStorage.saveUser(User(username, 0.0))
                 return
             }
             account?.let{
                 username = it.email?.split("@")?.get(0) ?: "unknown_username"
                 Log.i(auth, "sign in method, user is $username")
+                localStorage.saveUser(User(username, 0.0))
             } ?: run {
                 Toast.makeText(applicationContext, "Please choose an account.", LENGTH_SHORT).show()
                 signIn()
