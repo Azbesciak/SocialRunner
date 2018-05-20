@@ -8,7 +8,7 @@ fun Map<*, Map<*,*>>.toRoutes(): List<Route> {
     return this.values.map {
         val vals = (it["routePoints"]) as List<Map<String, Map<String, Double>>>
         val routePoints = vals.flatMap { it.values }
-                .map { RoutePoint(loc = Position(it["latitude"]!!.toDouble(), it["longitude"]!!.toDouble())) }
+                .map { RoutePoint(loc = Position(it["latitude"]!!, it["longitude"]!!)) }
                 .toMutableList()
         Route(id = it["id"].toString(),
                 pace = it["pace"].toString().toDouble(),

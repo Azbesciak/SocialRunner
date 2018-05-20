@@ -60,7 +60,10 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
     private fun drawWaypoints() {
         if (waypoints.size <= 1) return
         waypoints.getRouteOnMap(googleMap, apiKey, startTime)?.let { results ->
-            googleMap.positionCamera(results.routes[overview], googleMap.cameraPosition.zoom)
+            with(googleMap) {
+                addMarkersToMap(results)
+                positionCamera(results.routes[overview], googleMap.cameraPosition.zoom)
+            }
         }
     }
 

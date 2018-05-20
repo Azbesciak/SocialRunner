@@ -47,11 +47,12 @@ fun GoogleMap.positionCamera(route: DirectionsRoute, zoom : Float) {
     }
 }
 
-fun GoogleMap.createPolyline(results: DirectionsResult): Polyline? {
+fun GoogleMap.createPolyline(results: DirectionsResult): Pair<Polyline, PolylineOptions> {
     val decodedPath = PolylineEncoding
             .decode(results.routes[overview].overviewPolyline.encodedPath)
             .map { LatLng(it.lat, it.lng) }
-    return addPolyline(PolylineOptions().addAll(decodedPath))
+    val polylineOptions = PolylineOptions().addAll(decodedPath)
+    return addPolyline(polylineOptions) to polylineOptions
 }
 
 fun getEndLocationTitle(results: DirectionsResult) = with(results.first()) {
@@ -87,16 +88,12 @@ fun List<LatLng>.toRoutePoints() =
 
 fun Route.toWayPoints() = routePoints.map { LatLng(it.loc.latitude, it.loc.longitude) }
 
-fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTime = DateTime.now(), randomColor: Boolean = false) =
+fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTime = DateTime.now(),
+                               polConsumer: Pair<Polyline, PolylineOptions>.() -> Unit = {}) =
         getDirectionsDetails(TravelMode.WALKING, startTime, apiKey)?.let { results ->
             launch(UI) {
                 with(map) {
-                    addMarkersToMap(results)
-                    createPolyline(results)?.apply {
-                        if (randomColor) {
-                            color = colors[randGen.nextInt(colors.size)]
-                        }
-                    }
+                    createPolyline(results)?.polConsumer()
                 }
             }
             results

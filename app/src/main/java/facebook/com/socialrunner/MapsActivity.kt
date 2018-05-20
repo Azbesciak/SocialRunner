@@ -33,6 +33,8 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
@@ -44,6 +46,7 @@ import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import java.io.IOException
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.jar.Manifest
 import kotlin.math.abs
 
@@ -73,6 +76,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var mGoogleSignInClient: GoogleSignInClient
     private val gpsManager = GPSManager(::newPosition)
 
+    private val otherRoutes = CopyOnWriteArrayList<Pair<PolylineOptions, Int>>()
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -127,6 +131,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun disableSend() {
         if (::map.isInitialized) {
             routeCreator.disable()
+            drawLines()
         }
     }
 
@@ -188,8 +193,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         } else {
             username = user.name!!
         }
-
-
         gpsManager.getPosition(this)
     }
 
@@ -291,17 +294,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 placeMarkerOnMap(currentLatLng)
-                launch {
-                    routeService.getQueriesInArea(currentLatLng) { route ->
-                        launch {
-                            route.toWayPoints().getRouteOnMap(map, apiKey, randomColor = true)
-                        }
-                    }
-                }
+                searchForNearbyRoutes(currentLatLng)
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
                 routeService
             }
         }
+    }
+
+    private fun searchForNearbyRoutes(currentLatLng: LatLng) {
+        otherRoutes.clear()
+        launch {
+            routeService.getQueriesInArea(currentLatLng) { route ->
+                launch {
+                    route.toWayPoints().getRouteOnMap(map, apiKey) {
+                        first.color = colors[randGen.nextInt(colors.size)]
+                        otherRoutes.add(second to first.color)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun drawLines() {
+        otherRoutes.forEach { map.addPolyline(it.first).color = it.second }
     }
 
     private fun placeMarkerOnMap(location: LatLng) {

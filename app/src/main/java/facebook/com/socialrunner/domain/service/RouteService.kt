@@ -22,7 +22,10 @@ class RouteService {
     fun getQueriesInArea(loc: LatLng, onFetch: (Route) -> Unit) {
         val loca = location(loc)
         val handler = ResultHandler<Map<String, Map<*, *>>> { routes ->
-            routes?.toRoutes()
+            routes?.run {
+                toRoutes().filter { route -> route.routePoints.any { rp -> isInRange(rp, loca) } }
+                        .forEach(onFetch)
+            }
         }
         routeRepository.fetchFromRoutes(handler)
     }
