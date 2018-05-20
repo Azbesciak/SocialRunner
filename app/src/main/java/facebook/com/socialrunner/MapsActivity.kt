@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.location.Address
-import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -17,8 +15,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException
-import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.common.api.Status
@@ -34,25 +30,21 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.RouteLine
-import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.localdata.User
 import facebook.com.socialrunner.domain.service.RouteService
-import facebook.com.socialrunner.domain.service.RunnerService
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
-import java.io.IOException
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
-import java.util.jar.Manifest
 import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -70,15 +62,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var localStorage: LocalStorageManager
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
-    private val runnerService by lazy { RunnerService() }
     private val apiKey by lazy { getString(R.string.google_api_key) }
     private var worker: Worker? = null
 
     private val routeCreator by lazy {
-        NewRouteCreator(map, apiKey,{
-                    sendRouteBtn.isEnabled = it.isNotEmpty()
-                    drawLines()
-                }
+        NewRouteCreator(map, apiKey, {
+            sendRouteBtn.isEnabled = it.isNotEmpty()
+            drawLines()
+        }
         )
     }
     private lateinit var mGoogleSignInClient: GoogleSignInClient
@@ -123,7 +114,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         fragment.setOnPlaceSelectedListener(PSL())
     }
 
-    inner class PSL: PlaceSelectionListener {
+    inner class PSL : PlaceSelectionListener {
         override fun onPlaceSelected(p0: Place?) {
             p0?.latLng?.run {
                 focusMapAt(this)
@@ -134,8 +125,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun initButtons() {
-        //FirstModalDialog().setContext(applicationContext).setCallbacks(::stopAdding, ::joinMode).show(fragmentManager, "tag")
-
         stopAdding()
         createRouteBtn.setOnClickListener {
             startAdding()
@@ -204,24 +193,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         createRouteBtn.show()
     }
 
-    private fun joinMode() {
-        sendRouteBtn.hide()
-        cancelRouteBtn.hide()
-        createRouteBtn.hide()
-    }
-
-    private fun changePos(pos: Position) {
-        Log.i("pos", "New position is ${pos.longitude} ${pos.latitude}")
-    }
-
     override fun onStart() {
         super.onStart()
 
-        var mapsActivity = this
         launch(UI) {
-            var runner = MockRunner(mapsActivity)
-            var runner2 = MockRunner(mapsActivity)
-            while(true) {
+            while (true) {
                 delay(2500)
                 worker?.location = map.cameraPosition.target
             }
@@ -244,8 +220,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         launch {
-            while(!fetchedPosition)
-            {
+            while (!fetchedPosition) {
                 delay(100)
             }
 
@@ -261,30 +236,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     val coroutineLimit = 2
     var current = 0
-    fun running(route : Route)
-    {
-        if(coroutineLimit-1 < current)
+    fun running(route: Route) {
+        if (coroutineLimit > current)
             return
         current += 1
-        var mapsActivity = this
+        val mapsActivity = this
         launch {
             Log.i("asd", "$current")
-            var runner  = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
+            val runner = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
             delay(3000)
             runner.run()
         }
     }
 
     var fetchedPosition = false
-    lateinit var firstPositionOnMap : LatLng
+    lateinit var firstPositionOnMap: LatLng
     private fun newPosition(location: Location) {
-        if(!fetchedPosition)
-        {
+        if (!fetchedPosition) {
             firstPositionOnMap = LatLng(location.latitude, location.longitude)
             fetchedPosition = true
         }
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
-        // runnerService.updateRunnerLocation(username, Position(latitude = location.latitude, longitude = location.longitude))
     }
 
     private val auth = "auth"
@@ -385,6 +357,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
         }
     }
+
     fun focusMapAt(loc: LatLng) {
         searchNearby(loc)
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 12f))
@@ -412,7 +385,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     inner class Worker(var location: LatLng, var enabled: Boolean = true) {
         init {
             launch {
-                while(enabled) {
+                while (enabled) {
                     Log.i("DOWNLOAD", "download nearby routes...")
                     routeService.getQueriesInArea(location) { route ->
                         val isAlready = otherRoutes.any { it.route.id == route.id }
@@ -448,27 +421,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     fun placeMarkerOnMap(location: LatLng, f: (MarkerOptions) -> Unit = {}): MarkerOptions {
         return routeCreator.addPoint(location, f)
-    }
-
-    private fun getAddress(latLng: LatLng): String {
-        val geocoder = Geocoder(this)
-        val addresses: List<Address>?
-        val address: Address?
-        var addressText = ""
-
-        try {
-            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-            if (null != addresses && !addresses.isEmpty()) {
-                address = addresses[0]
-                for (i in 0 until address.maxAddressLineIndex) {
-                    addressText += if (i == 0) address.getAddressLine(i) else "\n" + address.getAddressLine(i)
-                }
-            }
-        } catch (e: IOException) {
-            Log.e("MapsActivity", e.localizedMessage)
-        }
-
-        return addressText
     }
 
     private fun startLocationUpdates() {
@@ -511,21 +463,5 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 }
             }
         }
-    }
-
-    private fun loadPlacePicker() {
-        val builder = PlacePicker.IntentBuilder()
-
-        try {
-            startActivityForResult(builder.build(this@MapsActivity), PLACE_PICKER_REQUEST)
-        } catch (e: GooglePlayServicesRepairableException) {
-            e.printStackTrace()
-        } catch (e: GooglePlayServicesNotAvailableException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun loadActiveRoutes() {
-
     }
 }
