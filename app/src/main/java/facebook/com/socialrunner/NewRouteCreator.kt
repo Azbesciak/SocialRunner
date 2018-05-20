@@ -59,12 +59,8 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
 
     private fun drawWaypoints() {
         if (waypoints.size <= 1) return
-            waypoints.getDirectionsDetails(TravelMode.WALKING, startTime, apiKey)?.let { results ->
-                with(googleMap) {
-                    addPolyline(results)
-                    addMarkersToMap(results)
-                    positionCamera(results.routes[overview], googleMap.cameraPosition.zoom)
-                }
+        waypoints.getRouteOnMap(googleMap, apiKey, startTime)?.let { results ->
+            googleMap.positionCamera(results.routes[overview], googleMap.cameraPosition.zoom)
         }
     }
 
@@ -85,4 +81,3 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
     }
 
 }
-typealias LL = com.google.maps.model.LatLng

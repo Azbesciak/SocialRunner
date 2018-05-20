@@ -40,6 +40,8 @@ import facebook.com.socialrunner.domain.data.localdata.User
 import facebook.com.socialrunner.domain.service.RouteService
 import facebook.com.socialrunner.domain.service.RunnerService
 import kotlinx.android.synthetic.main.activity_maps.*
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.launch
 import java.io.IOException
 import java.util.*
 import java.util.jar.Manifest
@@ -61,9 +63,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
     private val runnerService by lazy { RunnerService() }
+    private val apiKey by lazy {getString(R.string.google_api_key) }
+
     private val routeCreator by lazy {
-        NewRouteCreator(map,
-                getString(R.string.google_api_key),
+        NewRouteCreator(map, apiKey,
                 { sendRouteBtn.isEnabled = it.isNotEmpty() }
         )
     }
@@ -99,9 +102,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         FirebaseApp.initializeApp(this)
         localStorage = LocalStorageManager("user_data", applicationContext)
-
-
-
     }
 
     private fun initButtons() {
@@ -122,7 +122,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             stopAdding()
         }
     }
-
 
     private fun startRun(pace : Double)
     {
@@ -290,6 +289,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 placeMarkerOnMap(currentLatLng)
+                launch {
+                    routeService.getQueriesInArea(currentLatLng) { route ->
+                        launch {
+                            route.toWayPoints().getRouteOnMap(map, apiKey)
+                        }
+                    }
+                }
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
                 routeService
             }

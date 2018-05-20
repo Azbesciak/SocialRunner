@@ -2,6 +2,7 @@ package facebook.com.socialrunner.domain.data.repository
 
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.Query
 
 import facebook.com.socialrunner.domain.data.entity.Entity
 

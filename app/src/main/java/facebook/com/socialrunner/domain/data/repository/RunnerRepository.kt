@@ -10,10 +10,8 @@ class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
         fetchByField("name", name, handler)
     }
 
-    fun fetchPosition(username: String, handler: ResultHandler<Position>) {
-
+    fun fetchLocation(username: String, handler: ResultHandler<String>) {
         fetchByName(username, ResultHandler { runner ->
-
             runner?.let {
                 fetchByPath(getPathWithId(runner.id!!) + "/position", handler)
             }
@@ -21,7 +19,6 @@ class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
     }
 
     fun updateLocation(runnerId: String, loc: Position) {
-
         db.getReference(getPathWithId(runnerId) + "/username").setValue(loc)
     }
 
