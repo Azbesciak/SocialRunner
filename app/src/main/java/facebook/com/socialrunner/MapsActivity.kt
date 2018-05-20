@@ -224,6 +224,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         launch(UI) {
             var runner = MockRunner(mapsActivity)
             var runner2 = MockRunner(mapsActivity)
+            while(true) {
+                delay(2500)
+                worker?.location = map.cameraPosition.target
+            }
         }
         gpsManager.getPosition(this)
 
@@ -268,7 +272,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         current += 1
         var mapsActivity = this
         launch(UI){
-            Log.i("asd", "${current}")
+            Log.i("asd", "$current")
             var runner  = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
             delay(3000)
             runner.run()
@@ -378,7 +382,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 placeMarkerOnMap(currentLatLng)
-                searchForNearbyRoutes()
+                searchForNearbyRoutes(currentLatLng)
                 focusMapAt(currentLatLng)
                 onPolylineClickListener()
                 routeService
@@ -386,7 +390,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
     fun focusMapAt(loc: LatLng) {
-        searchNearby()
+        searchNearby(loc)
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 12f))
     }
 
@@ -394,27 +398,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                showToast(find.route.pace.toString())
+                showToast("Pace: ${find.route.pace.toString()}\nStart: ${find.route.startHour}: ${find.route.startMinute}")
             }
         }
     }
 
-    private fun searchForNearbyRoutes() {
+    private fun searchForNearbyRoutes(location: LatLng) {
         otherRoutes.clear()
-        searchNearby()
+        searchNearby(location)
     }
 
-    private fun searchNearby() {
+    private fun searchNearby(location: LatLng) {
         worker?.disable()
-        worker = Worker()
+        worker = Worker(location)
     }
 
-    inner class Worker(var enabled: Boolean = true) {
+    inner class Worker(var location: LatLng, var enabled: Boolean = true) {
         init {
-            launch(UI) {
+            launch {
                 while(enabled) {
                     Log.i("DOWNLOAD", "download nearby routes...")
-                    routeService.getQueriesInArea(map.cameraPosition.target) { route ->
+                    routeService.getQueriesInArea(location) { route ->
                         val isAlready = otherRoutes.any { it.route.id == route.id }
                         if (isAlready) return@getQueriesInArea
                         launch {
