@@ -1,7 +1,7 @@
 package facebook.com.socialrunner.domain.data.repository
 
 
-import facebook.com.socialrunner.domain.data.entity.Location
+import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Runner
 
 class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
@@ -20,7 +20,7 @@ class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
         })
     }
 
-    fun updateLocation(runnerId: String, loc: Location) {
+    fun updateLocation(runnerId: String, loc: Position) {
 
         db.getReference(getPathWithId(runnerId) + "/username").setValue(loc)
     }

@@ -1,6 +1,6 @@
 package facebook.com.socialrunner.domain.service
 
-import facebook.com.socialrunner.domain.data.entity.Location
+import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Runner
 import facebook.com.socialrunner.domain.data.repository.ResultHandler
 import facebook.com.socialrunner.domain.data.repository.RunnerRepository
@@ -20,7 +20,7 @@ class RunnerService {
         runnerRepository.fetchLocation(username, handler)
     }
 
-    fun updateRunnerLocation(username: String, loc: Location) {
+    fun updateRunnerLocation(username: String, loc: Position) {
         if (!runnerNameIdCache.containsKey(username)) {
             runnerRepository.fetchByName(username, ResultHandler { runner ->
                 runnerNameIdCache[username] = runner?.id!!
@@ -31,7 +31,7 @@ class RunnerService {
         }
     }
 
-    private fun updateLocationById(runnerId: String, loc: Location) {
+    private fun updateLocationById(runnerId: String, loc: Position) {
         runnerRepository.updateLocation(runnerId, loc)
     }
 }
