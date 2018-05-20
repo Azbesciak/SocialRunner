@@ -16,7 +16,7 @@ class RunnerService {
         runnerRepository.create(runner)
     }
 
-    fun getRunnerLocation(username : String, handler : ResultHandler<String>) {
+    fun getRunnerPosition(username : String, handler : ResultHandler<Position>) {
         runnerRepository.fetchPosition(username, handler)
     }
 
