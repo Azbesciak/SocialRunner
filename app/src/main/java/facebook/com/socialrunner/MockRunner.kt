@@ -11,9 +11,9 @@ import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 
 class MockRunner(var mapActivity : MapsActivity){
-    public var waypoint : MutableList<RoutePoint> = arrayListOf()
-    public lateinit var onPositionChgange : (pos : Position) -> Unit
-    public lateinit var name : String
+    private var waypoint : MutableList<RoutePoint> = arrayListOf()
+    lateinit var onPositionChgange : (pos : Position) -> Unit
+    lateinit var name : String
     private var pos = 0
 
     public fun setRoute(route : Route) : MockRunner
@@ -27,27 +27,29 @@ class MockRunner(var mapActivity : MapsActivity){
         return this
     }
     var lastMarker : MarkerOptions = MarkerOptions()
-    public fun run(){
+    fun run(){
         var positionSet = false
-        launch(UI){
+        launch{
             while(pos < waypoint.size - 1)
             {
                 var coef = 0.0f
                 while(coef < 1.0001f)
                 {
-                    var tempPos = Position(waypoint[pos].loc.latitude + coef*(waypoint[pos+1].loc.latitude - waypoint[pos].loc.latitude),
+                    val tempPos = Position(waypoint[pos].loc.latitude + coef*(waypoint[pos+1].loc.latitude - waypoint[pos].loc.latitude),
                             waypoint[pos].loc.longitude+coef*(waypoint[pos+1].loc.longitude- waypoint[pos].loc.longitude))
                     Log.i("pos2", "New position is ${tempPos.longitude} ${tempPos.latitude}")
 
-                    var pos = LatLng(tempPos.latitude, tempPos.longitude)
-                    if(!positionSet)
-                    {
-                        positionSet = true
-                        lastMarker = mapActivity.placeMarkerOnMap(pos)
+                    val pos = LatLng(tempPos.latitude, tempPos.longitude)
+                    launch(UI) {
+                        if (!positionSet) {
+                            positionSet = true
+                            lastMarker = mapActivity.placeMarkerOnMap(pos)
+                        } else {
+                            lastMarker.position(pos)
+                        }
                     }
-                    lastMarker.position(pos)
                     coef+=0.05f
-                    Thread.sleep(2000)
+                    delay(2000)
                 }
                 pos += 1
             }

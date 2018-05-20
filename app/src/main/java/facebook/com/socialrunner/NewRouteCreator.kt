@@ -56,8 +56,9 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         }
     }
 
-    fun addPoint(point: LatLng) : MarkerOptions {
+    fun addPoint(point: LatLng, f: (MarkerOptions) -> Unit = {}) : MarkerOptions {
         val marker = point.marker()
+        f(marker)
         googleMap.addMarker(marker)
         waypoints.add(point)
         return marker

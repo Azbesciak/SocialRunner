@@ -34,10 +34,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.maps.model.*
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.RouteLine
 import facebook.com.socialrunner.domain.data.entity.Position
@@ -246,8 +243,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             username = user.name!!
         }
 
-        launch (UI )
-        {
+        launch {
             while(!fetchedPosition)
             {
                 delay(100)
@@ -271,7 +267,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             return
         current += 1
         var mapsActivity = this
-        launch(UI){
+        launch {
             Log.i("asd", "$current")
             var runner  = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
             delay(3000)
@@ -450,8 +446,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    fun placeMarkerOnMap(location: LatLng) : MarkerOptions {
-        return routeCreator.addPoint(location)
+    fun placeMarkerOnMap(location: LatLng, f: (MarkerOptions) -> Unit = {}): MarkerOptions {
+        return routeCreator.addPoint(location, f)
     }
 
     private fun getAddress(latLng: LatLng): String {
