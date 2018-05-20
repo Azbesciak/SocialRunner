@@ -9,7 +9,6 @@ class Runner(id: String? = null,
              var routeIds: MutableList<String>
 ) : Entity(id) {
     companion object {
-        val listType = GenericTypeIndicator<List<Runner>>()
-        val objType = GenericTypeIndicator<Runner>()
+        val objType = Runner("s","s",Position(1.0,1.0), routeIds = mutableListOf()).javaClass
     }
 }

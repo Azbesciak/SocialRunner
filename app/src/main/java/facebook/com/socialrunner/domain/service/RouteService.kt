@@ -10,6 +10,7 @@ import facebook.com.socialrunner.domain.data.repository.ResultHandler
 import facebook.com.socialrunner.domain.data.repository.RouteRepository
 import facebook.com.socialrunner.domain.data.repository.RunnerRepository
 import facebook.com.socialrunner.toRoutePoints
+import facebook.com.socialrunner.toRoutes
 import java.util.*
 
 
@@ -21,10 +22,7 @@ class RouteService {
     fun getQueriesInArea(loc: LatLng, onFetch: (Route) -> Unit) {
         val loca = location(loc)
         val handler = ResultHandler<Map<String, Map<*, *>>> { routes ->
-            routes?.let {
-//                it.values.map
-//                it.values.filter { it.routePoints.any { rp -> isInRange(rp, loca) } }
-            }
+            routes?.toRoutes()
         }
         routeRepository.fetchFromRoutes(handler)
     }

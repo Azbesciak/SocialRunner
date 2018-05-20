@@ -9,7 +9,6 @@ class Route(id: String? = null,
             var startMinute: Int? = null,
             var routePoints: MutableList<RoutePoint> = mutableListOf()) : Entity(id) {
     companion object {
-        val listType = GenericTypeIndicator<List<Route>>()
-        val objType = GenericTypeIndicator<Route>()
+        val objType = Route().javaClass
     }
 }
