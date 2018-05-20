@@ -23,7 +23,7 @@ class MockRunner(var mapActivity : MapsActivity){
         this.name = name
         return this
     }
-
+    var lastMarker : LatLng = LatLng(0.0,0.0)
     public fun run(){
         launch(UI){
             while(pos < waypoint.size - 1)
@@ -33,10 +33,13 @@ class MockRunner(var mapActivity : MapsActivity){
                 {
                     var tempPos = Position(waypoint[pos].latitude + coef*(waypoint[pos+1].latitude - waypoint[pos].latitude), waypoint[pos].longitude+coef*(waypoint[pos+1].longitude- waypoint[pos].longitude))
                     Log.i("pos2", "New position is ${tempPos.longitude} ${tempPos.latitude}")
-                    mapActivity.placeMarkerOnMap(LatLng(tempPos.latitude, tempPos.longitude))
+                    mapActivity.removeMarker(lastMarker)
+                    lastMarker = LatLng(tempPos.latitude, tempPos.longitude)
+                    mapActivity.placeMarkerOnMap(lastMarker)
                     coef+=0.05f
                     Thread.sleep(2000)
                 }
+                mapActivity.removeMarker(lastMarker)
                 pos += 1
             }
         }

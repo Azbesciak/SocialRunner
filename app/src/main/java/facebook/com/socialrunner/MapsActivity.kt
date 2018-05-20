@@ -229,7 +229,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun newPosition(location: Location) {
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
-        runnerService.updateRunnerLocation(username, Position(latitude = location.latitude, longitude = location.longitude))
+       // runnerService.updateRunnerLocation(username, Position(latitude = location.latitude, longitude = location.longitude))
     }
 
     private val auth = "auth"
