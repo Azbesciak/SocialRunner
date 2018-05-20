@@ -7,15 +7,15 @@ import facebook.com.socialrunner.domain.data.entity.Runner
 class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
 
     fun fetchByName(name: String, handler: ResultHandler<Runner>) {
-        fetchByPath("$RUNNER_ENTITY_PATH/$name", handler)
+        fetchByField("name", name, handler)
     }
 
-    fun fetchLocation(username: String, handler: ResultHandler<String>) {
+    fun fetchPosition(username: String, handler: ResultHandler<Position>) {
 
         fetchByName(username, ResultHandler { runner ->
 
             runner?.let {
-                fetchByField(getPathWithId(runner.id!!) + "/name", username, handler)
+                fetchByPath(getPathWithId(runner.id!!) + "/position", handler)
             }
         })
     }

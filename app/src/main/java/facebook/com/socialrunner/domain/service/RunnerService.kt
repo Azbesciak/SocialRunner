@@ -17,7 +17,7 @@ class RunnerService {
     }
 
     fun getRunnerLocation(username : String, handler : ResultHandler<String>) {
-        runnerRepository.fetchLocation(username, handler)
+        runnerRepository.fetchPosition(username, handler)
     }
 
     fun updateRunnerLocation(username: String, loc: Position) {
