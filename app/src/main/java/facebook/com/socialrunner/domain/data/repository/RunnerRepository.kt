@@ -18,8 +18,8 @@ class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
         })
     }
 
-    fun updateLocation(runnerId: String, loc: Position) {
-        db.getReference(getPathWithId(runnerId) + "/username").setValue(loc)
+    fun updateLocation(runnerId: String, pos: Position) {
+        db.getReference(getPathWithId(runnerId) + "/position").setValue(pos)
     }
 
     companion object {

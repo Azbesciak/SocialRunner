@@ -13,7 +13,7 @@ abstract class FirebaseRepository<T : Entity>(private val entityPath: String) {
     }
 
     protected fun <R, F> fetchByField(field: String, value: F, handler: ResultHandler<R>) {
-        val query = db.getReference(entityPath).child(field).equalTo(value.toString())
+        val query = db.getReference(entityPath).orderByChild(field).equalTo(value.toString())
         query.addValueEventListener(handler.asListener())
     }
 

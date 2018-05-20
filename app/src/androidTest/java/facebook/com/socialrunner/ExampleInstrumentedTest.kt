@@ -23,7 +23,7 @@ class ExampleInstrumentedTest {
     @Test
     fun useAppContext() {
         // Context of the app under test.
-     1   val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = InstrumentationRegistry.getTargetContext()
         assertEquals("facebook.com.socialrunner", appContext.packageName)
     }
 }
