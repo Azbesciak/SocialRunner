@@ -260,7 +260,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     var current = 0
     fun running(route : Route)
     {
-        if(coroutineLimit < current)
+        if(coroutineLimit-1 < current)
             return
         current += 1
         var mapsActivity = this
@@ -268,7 +268,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             Log.i("asd", "${current}")
             var runner  = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
             delay(3000)
-            //runner.run()
+            runner.run()
         }
     }
 

@@ -28,6 +28,7 @@ class MockRunner(var mapActivity : MapsActivity){
     }
     var lastMarker : MarkerOptions = MarkerOptions()
     public fun run(){
+        var positionSet = false
         launch(UI){
             while(pos < waypoint.size - 1)
             {
@@ -37,13 +38,17 @@ class MockRunner(var mapActivity : MapsActivity){
                     var tempPos = Position(waypoint[pos].loc.latitude + coef*(waypoint[pos+1].loc.latitude - waypoint[pos].loc.latitude),
                             waypoint[pos].loc.longitude+coef*(waypoint[pos+1].loc.longitude- waypoint[pos].loc.longitude))
                     Log.i("pos2", "New position is ${tempPos.longitude} ${tempPos.latitude}")
-                    lastMarker.visible(false)
-                   //  = LatLng(tempPos.latitude, tempPos.longitude)
-                   // lastMarker = mapActivity.placeMarkerOnMap(lastMarker)
+
+                    var pos = LatLng(tempPos.latitude, tempPos.longitude)
+                    if(!positionSet)
+                    {
+                        positionSet = true
+                        lastMarker = mapActivity.placeMarkerOnMap(pos)
+                    }
+                    lastMarker.position(pos)
                     coef+=0.05f
                     Thread.sleep(2000)
                 }
-                //mapActivity.removeMarker(lastMarker)
                 pos += 1
             }
         }
