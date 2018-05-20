@@ -398,7 +398,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                showToast("Pace: ${find.route.pace.toString()}\nStart: ${find.route.startHour}: ${find.route.startMinute}")
+                showToast("Pace: ${find.route.pace.toString()}\nStart: ${find.route.startHour}:${find.route.startMinute}")
             }
         }
     }

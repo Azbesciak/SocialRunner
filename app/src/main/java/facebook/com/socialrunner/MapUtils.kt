@@ -42,10 +42,11 @@ fun GoogleMap.addMarkersToMap(results: DirectionsResult) {
 }
 
 fun GoogleMap.positionCamera(route: DirectionsRoute, zoom : Float) {
-    with(route.legs[overview].startLocation) {
+    with(route.legs[overview].endLocation) {
         moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), zoom))
     }
 }
+
 
 fun GoogleMap.createPolyline(results: DirectionsResult): Pair<Polyline, PolylineOptions> {
     val decodedPath = PolylineEncoding
