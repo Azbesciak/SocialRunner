@@ -1,5 +1,6 @@
 package facebook.com.socialrunner
 
+import android.os.Build
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
@@ -34,17 +35,22 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
         googleMap.setOnMarkerClickListener { marker ->
             launch(UI) {
                 with(marker.position) {
-                    waypoints.removeIf {
-                        abs(it.latitude - latitude) < epsilon &&
-                                abs(it.longitude - longitude) < epsilon
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        waypoints.removeIf {
+                            abs(it.latitude - latitude) < epsilon &&
+                                    abs(it.longitude - longitude) < epsilon
+                        }
+                    } else {
+                        marker.remove()
+
                     }
                 }
-                onRouteChangeListener(waypoints)
                 googleMap.apply {
                     clear()
                     waypoints.forEach { addMarker(it.marker()) }
                     drawWaypoints()
                 }
+                onRouteChangeListener(waypoints)
             }
             true
         }

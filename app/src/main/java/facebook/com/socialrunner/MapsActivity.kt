@@ -75,10 +75,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val routeService by lazy { RouteService() }
     private val runnerService by lazy { RunnerService() }
     private val apiKey by lazy { getString(R.string.google_api_key) }
+    private var worker: Worker? = null
 
     private val routeCreator by lazy {
-        NewRouteCreator(map, apiKey,
-                { sendRouteBtn.isEnabled = it.isNotEmpty() }
+        NewRouteCreator(map, apiKey,{
+                    sendRouteBtn.isEnabled = it.isNotEmpty()
+                    drawLines()
+                }
         )
     }
     private lateinit var mGoogleSignInClient: GoogleSignInClient
@@ -375,7 +378,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 placeMarkerOnMap(currentLatLng)
-                searchForNearbyRoutes(currentLatLng)
+                searchForNearbyRoutes()
                 focusMapAt(currentLatLng)
                 onPolylineClickListener()
                 routeService
@@ -383,6 +386,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
     fun focusMapAt(loc: LatLng) {
+        searchNearby()
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 12f))
     }
 
@@ -395,25 +399,40 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    private fun searchForNearbyRoutes(currentLatLng: LatLng) {
+    private fun searchForNearbyRoutes() {
         otherRoutes.clear()
-        launch {
-            while(true) {
-                Log.i("DOWNLOAD", "download nearby routes...")
-                routeService.getQueriesInArea(currentLatLng) { route ->
-                    val isAlready = otherRoutes.any { it.route.id == route.id }
-                    if (isAlready) return@getQueriesInArea
-                    launch {
-                        route.toWayPoints().getRouteOnMap(map, apiKey) {
-                            first.color = colors[randGen.nextInt(colors.size)]
-                            first.isClickable = true
-                            first.tag = route.id
-                            otherRoutes.add(RouteLine(second, first.color, route))
+        searchNearby()
+    }
+
+    private fun searchNearby() {
+        worker?.disable()
+        worker = Worker()
+    }
+
+    inner class Worker(var enabled: Boolean = true) {
+        init {
+            launch(UI) {
+                while(enabled) {
+                    Log.i("DOWNLOAD", "download nearby routes...")
+                    routeService.getQueriesInArea(map.cameraPosition.target) { route ->
+                        val isAlready = otherRoutes.any { it.route.id == route.id }
+                        if (isAlready) return@getQueriesInArea
+                        launch {
+                            route.toWayPoints().getRouteOnMap(map, apiKey) {
+                                first.color = colors[randGen.nextInt(colors.size)]
+                                first.isClickable = true
+                                first.tag = route.id
+                                otherRoutes.add(RouteLine(second, first.color, route))
+                            }
                         }
                     }
+                    delay(10, TimeUnit.SECONDS)
                 }
-                delay(10, TimeUnit.SECONDS)
             }
+        }
+
+        fun disable() {
+            enabled = false
         }
     }
 
@@ -429,10 +448,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     fun placeMarkerOnMap(location: LatLng) : MarkerOptions {
         return routeCreator.addPoint(location)
-    }
-
-    fun removeMarker(position: LatLng) {
-        removeMarker(position)
     }
 
     private fun getAddress(latLng: LatLng): String {
