@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
+import facebook.com.socialrunner.MockRunnerService.running
 import facebook.com.socialrunner.domain.RouteLine
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.localdata.User
@@ -64,6 +65,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val routeService by lazy { RouteService() }
     private val apiKey by lazy { getString(R.string.google_api_key) }
     private var worker: Worker? = null
+    private var fetchedPosition = false
+    private lateinit var firstPositionOnMap: LatLng
 
     private val routeCreator by lazy {
         NewRouteCreator(map, apiKey, {
@@ -81,6 +84,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
         private const val REQUEST_CHECK_SETTINGS = 2
         private const val PLACE_PICKER_REQUEST = 3
+        private const val RC_SIGN_IN = 1000
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -193,15 +197,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         createRouteBtn.show()
     }
 
-    override fun onStart() {
-        super.onStart()
-
+    private fun updateWorkerLocation() {
         launch(UI) {
             while (true) {
                 delay(2500)
                 worker?.location = map.cameraPosition.target
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        updateWorkerLocation()
+
         gpsManager.getPosition(this)
 
         val user = localStorage.loadUser()
@@ -218,39 +226,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         } else {
             username = user.name!!
         }
-
-        launch {
-            while (!fetchedPosition) {
-                delay(100)
-            }
-
-            routeService.getQueriesInArea(firstPositionOnMap, ::running)
-        }
     }
 
-    private val RC_SIGN_IN = 1000
+
     private fun signIn() {
         val signInIntent = mGoogleSignInClient.signInIntent
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-    val coroutineLimit = 2
-    var current = 0
-    fun running(route: Route) {
-        if (coroutineLimit > current)
-            return
-        current += 1
-        val mapsActivity = this
-        launch {
-            Log.i("asd", "$current")
-            val runner = MockRunner(mapsActivity).setUsername("Janek").setRoute(route)
-            delay(3000)
-            runner.run()
-        }
-    }
-
-    var fetchedPosition = false
-    lateinit var firstPositionOnMap: LatLng
     private fun newPosition(location: Location) {
         if (!fetchedPosition) {
             firstPositionOnMap = LatLng(location.latitude, location.longitude)
@@ -262,43 +245,44 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val auth = "auth"
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CHECK_SETTINGS) {
-            if (resultCode == Activity.RESULT_OK) {
-                locationUpdateState = true
-                startLocationUpdates()
+        when (requestCode) {
+            REQUEST_CHECK_SETTINGS -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    locationUpdateState = true
+                    startLocationUpdates()
+                }
             }
-        }
-        if (requestCode == PLACE_PICKER_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                val place = PlacePicker.getPlace(this, data)
-                var addressText = place.name.toString()
-                addressText += "\n" + place.address.toString()
+            PLACE_PICKER_REQUEST -> {
+                if (resultCode == RESULT_OK) {
+                    val place = PlacePicker.getPlace(this, data)
+                    var addressText = place.name.toString()
+                    addressText += "\n" + place.address.toString()
 
-                placeMarkerOnMap(place.latLng)
+                    placeMarkerOnMap(place.latLng)
+                }
             }
-        }
-
-        if (requestCode == RC_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            val account: GoogleSignInAccount?
-            try {
-                account = task.getResult(ApiException::class.java)
-            } catch (e: ApiException) {
-                // The ApiException status code indicates the detailed failure reason.
-                // Please refer to the GoogleSignInStatusCodes class reference for more information.
-                Log.w(auth, "signInResult:failed code=" + e.statusCode)
-                showToast("Something went wrong, choosing random username.")
-                username = "user_${abs(Random().nextInt() % 1000000)}"
-                localStorage.saveUser(User(username, 0.0))
-                return
-            }
-            account?.let {
-                username = it.email?.split("@")?.get(0) ?: "unknown_username"
-                Log.i(auth, "sign in method, user is $username")
-                localStorage.saveUser(User(username, 0.0))
-            } ?: run {
-                showToast("Please choose an account.")
-                signIn()
+            RC_SIGN_IN -> {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data);
+                val account: GoogleSignInAccount?
+                try {
+                    account = task.getResult(ApiException::class.java)
+                } catch (e: ApiException) {
+                    // The ApiException status code indicates the detailed failure reason.
+                    // Please refer to the GoogleSignInStatusCodes class reference for more information.
+                    Log.w(auth, "signInResult:failed code=" + e.statusCode)
+                    showToast("Something went wrong, choosing random username.")
+                    username = "user_${abs(Random().nextInt() % 1000000)}"
+                    localStorage.saveUser(User(username, 0.0))
+                    return
+                }
+                account?.let {
+                    username = it.email?.split("@")?.get(0) ?: "unknown_username"
+                    Log.i(auth, "sign in method, user is $username")
+                    localStorage.saveUser(User(username, 0.0))
+                } ?: run {
+                    showToast("Please choose an account.")
+                    signIn()
+                }
             }
         }
     }
@@ -367,7 +351,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                showToast("Pace: ${find.route.pace.toString()}\nStart: ${find.route.startHour}:${find.route.startMinute}")
+                with(find.route) {showToast("Pace: $pace\nStart: $startHour:$startMinute")}
             }
         }
     }
@@ -390,6 +374,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     routeService.getQueriesInArea(location) { route ->
                         val isAlready = otherRoutes.any { it.route.id == route.id }
                         if (isAlready) return@getQueriesInArea
+                        running(route)
                         launch {
                             route.toWayPoints().getRouteOnMap(map, apiKey) {
                                 first.color = colors[randGen.nextInt(colors.size)]

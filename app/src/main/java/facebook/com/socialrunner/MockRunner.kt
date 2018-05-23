@@ -6,38 +6,42 @@ import com.google.android.gms.maps.model.MarkerOptions
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.RoutePoint
+import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 
-class MockRunner(var mapActivity : MapsActivity){
-    private var waypoint : MutableList<RoutePoint> = arrayListOf()
-    lateinit var onPositionChgange : (pos : Position) -> Unit
-    lateinit var name : String
-    private var pos = 0
-
-    public fun setRoute(route : Route) : MockRunner
-    {
-        waypoint.addAll(route.routePoints)
-        return this
+object MockRunnerService {
+    private val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej").map { Runner(it) }
+    @Synchronized
+    fun MapsActivity.running(route: Route) {
+        runners.firstOrNull { !it.isRunning }?. let {
+            it.isRunning = true
+            val runner = MockRunner(this, it, route.routePoints)
+            launch {
+                Log.i("Mock Runner", "${it.name} started!")
+                delay(3000)
+                runner.run()
+            }
+        }
     }
-    public fun setUsername(name : String) : MockRunner
-    {
-        this.name = name
-        return this
-    }
-    var lastMarker : MarkerOptions = MarkerOptions()
-    fun run(){
+}
+data class Runner(val name: String, var isRunning: Boolean = false)
+class MockRunner(var mapActivity: MapsActivity,
+                 private val runner: Runner,
+                 private val waypoint: List<RoutePoint>,
+                 private var lastMarker: MarkerOptions = MarkerOptions(),
+                 private var pos: Int = 0
+) {
+    fun run() {
         var positionSet = false
-        launch{
-            while(pos < waypoint.size - 1)
-            {
+        launch {
+            while (pos < waypoint.size - 1) {
                 var coef = 0.0f
-                while(coef < 1.0001f)
-                {
-                    val tempPos = Position(waypoint[pos].loc.latitude + coef*(waypoint[pos+1].loc.latitude - waypoint[pos].loc.latitude),
-                            waypoint[pos].loc.longitude+coef*(waypoint[pos+1].loc.longitude- waypoint[pos].loc.longitude))
-                    Log.i("pos2", "New position is ${tempPos.longitude} ${tempPos.latitude}")
+                while (coef < 1.0001f) {
+                    val tempPos = Position(waypoint[pos].loc.latitude + coef * (waypoint[pos + 1].loc.latitude - waypoint[pos].loc.latitude),
+                            waypoint[pos].loc.longitude + coef * (waypoint[pos + 1].loc.longitude - waypoint[pos].loc.longitude))
+                    Log.i("pos2", "New position of ${runner.name} is ${tempPos.longitude} ${tempPos.latitude}")
 
                     val pos = LatLng(tempPos.latitude, tempPos.longitude)
                     launch(UI) {
@@ -48,11 +52,12 @@ class MockRunner(var mapActivity : MapsActivity){
                             lastMarker.position(pos)
                         }
                     }
-                    coef+=0.05f
+                    coef += 0.05f
                     delay(2000)
                 }
                 pos += 1
             }
+            runner.isRunning = false
         }
 
     }
