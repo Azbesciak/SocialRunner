@@ -16,7 +16,7 @@ object MockRunnerService {
             .map { Runner(it) }
     @Synchronized
     fun MapsActivity.running(route: Route) {
-        runners.firstOrNull { it.markerId == null }?. let {
+        runners.firstOrNull { !it.isRunning}?. let {
             val runner = MockRunner(this, it, route.routePoints)
             launch {
                 Log.i("Mock Runner", "${it.name} started!")
@@ -26,7 +26,7 @@ object MockRunnerService {
         }
     }
 }
-data class Runner(val name: String, var markerId: String? = null)
+data class Runner(val name: String, var isRunning: Boolean = false)
 class MockRunner(var mapActivity: MapsActivity,
                  private val runner: Runner,
                  private val waypoint: List<RoutePoint>,
@@ -47,10 +47,10 @@ class MockRunner(var mapActivity: MapsActivity,
                     val pos = LatLng(tempPos.latitude, tempPos.longitude)
                     launch(UI) {
                         if (!::lastMarker.isInitialized) {
-                            lastMarker = mapActivity.placeMarkerOnMap(pos).apply {
+                            lastMarker = mapActivity.placeMarkerOnMap(pos, false).apply {
                                 setIcon(BitmapDescriptorFactory.fromResource(R.drawable.runner))
                             }
-                            runner.markerId = lastMarker.id
+                            runner.isRunning = true
                         } else {
                             lastMarker.position = pos
                         }
@@ -63,7 +63,7 @@ class MockRunner(var mapActivity: MapsActivity,
             if (::lastMarker.isInitialized) {
                 lastMarker.remove()
             }
-            runner.markerId = null
+            runner.isRunning = false
         }
 
     }

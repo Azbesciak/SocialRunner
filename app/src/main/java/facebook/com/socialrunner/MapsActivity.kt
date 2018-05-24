@@ -258,7 +258,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     var addressText = place.name.toString()
                     addressText += "\n" + place.address.toString()
 
-                    placeMarkerOnMap(place.latLng)
+                    placeMarkerOnMap(place.latLng, true)
                 }
             }
             RC_SIGN_IN -> {
@@ -333,7 +333,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (location != null) {
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
-                placeMarkerOnMap(currentLatLng)
+                placeMarkerOnMap(currentLatLng, true)
                 searchForNearbyRoutes(currentLatLng)
                 focusMapAt(currentLatLng)
                 onPolylineClickListener()
@@ -404,8 +404,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    fun placeMarkerOnMap(location: LatLng, f: (MarkerOptions) -> Unit = {}): Marker {
-        return routeCreator.addPoint(location, f)
+    fun placeMarkerOnMap(location: LatLng, isLocation: Boolean, f: (MarkerOptions) -> Unit = {}): Marker {
+        return routeCreator.addPoint(location, isLocation, f)
     }
 
     private fun startLocationUpdates() {
