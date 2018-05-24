@@ -27,7 +27,7 @@ object MockRunnerService {
     }
 }
 data class Runner(val name: String, var isRunning: Boolean = false)
-class MockRunner(var mapActivity: MapsActivity,
+class MockRunner(private var mapActivity: MapsActivity,
                  private val runner: Runner,
                  private val waypoint: List<RoutePoint>,
                  private var pos: Int = 0
@@ -47,7 +47,7 @@ class MockRunner(var mapActivity: MapsActivity,
                     val pos = LatLng(tempPos.latitude, tempPos.longitude)
                     launch(UI) {
                         if (!::lastMarker.isInitialized) {
-                            lastMarker = mapActivity.placeMarkerOnMap(pos, false).apply {
+                            lastMarker = mapActivity.addMarker(pos).apply {
                                 setIcon(BitmapDescriptorFactory.fromResource(R.drawable.runner))
                             }
                             runner.isRunning = true
@@ -61,10 +61,11 @@ class MockRunner(var mapActivity: MapsActivity,
                 pos += 1
             }
             if (::lastMarker.isInitialized) {
-                lastMarker.remove()
+                launch(UI){
+                    lastMarker.remove()
+                }
             }
             runner.isRunning = false
         }
-
     }
 }

@@ -1,5 +1,6 @@
 package facebook.com.socialrunner
 
+import android.Manifest.permission.*
 import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
@@ -7,15 +8,9 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
+import android.support.v4.app.ActivityCompat.requestPermissions
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.Toast
-import android.widget.Toast.LENGTH_SHORT
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.common.api.Status
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -32,12 +27,10 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.MockRunnerService.running
 import facebook.com.socialrunner.domain.RouteLine
 import facebook.com.socialrunner.domain.data.entity.Route
-import facebook.com.socialrunner.domain.data.localdata.User
 import facebook.com.socialrunner.domain.service.RouteService
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
@@ -46,21 +39,13 @@ import kotlinx.coroutines.experimental.launch
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
-
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var lastLocation: Location
-    private lateinit var _username: String
-    private var username: String
-        get() = _username
-        set(value) {
-            _username = value
-        }
     private lateinit var locationRequest: LocationRequest
-    private lateinit var localStorage: LocalStorageManager
+    private lateinit var authCenter: AuthCenter
     private var locationUpdateState = false
     private val routeService by lazy { RouteService() }
     private val apiKey by lazy { getString(R.string.google_api_key) }
@@ -71,11 +56,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private val routeCreator by lazy {
         NewRouteCreator(map, apiKey, {
             sendRouteBtn.isEnabled = it.isNotEmpty()
-            drawLines()
-        }
-        )
+        })
     }
-    private lateinit var mGoogleSignInClient: GoogleSignInClient
     private val gpsManager = GPSManager(::newPosition)
 
     private val otherRoutes = CopyOnWriteArrayList<RouteLine>()
@@ -95,37 +77,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        ActivityCompat.requestPermissions(this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
-        ActivityCompat.requestPermissions(this,
-                arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 2)
-
+        requestPermissions(this, arrayOf(ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+        requestPermissions(this, arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE), 2)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         initButtons()
         initAutocomplete()
         createLocationRequest()
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build()
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
-        FirebaseApp.initializeApp(this)
-        localStorage = LocalStorageManager("user_data", applicationContext)
+        authCenter = AuthCenter(applicationContext, this, ::signIn)
 
+        FirebaseApp.initializeApp(this)
     }
 
     private fun initAutocomplete() {
-        val fragment = fragmentManager.findFragmentById(R.id.autocomplete_fragment) as (PlaceAutocompleteFragment)
-        fragment.setOnPlaceSelectedListener(PSL())
-    }
-
-    inner class PSL : PlaceSelectionListener {
-        override fun onPlaceSelected(p0: Place?) {
-            p0?.latLng?.run {
-                focusMapAt(this)
+        val fragment = fragmentManager
+                .findFragmentById(R.id.autocomplete_fragment) as PlaceAutocompleteFragment
+        fragment.setOnPlaceSelectedListener(object: PlaceSelectionListener {
+            override fun onPlaceSelected(p0: Place?) {
+                p0?.latLng?.run {
+                    focusMapAt(this)
+                }
             }
-        }
-
-        override fun onError(p0: Status?) {}
+            override fun onError(p0: Status?) {}
+        })
     }
 
     private fun initButtons() {
@@ -151,10 +126,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun disableSend() {
         if (::map.isInitialized) {
             routeCreator.disable()
-            drawLines()
         }
     }
 
+    private var pace = 0.0
     private fun startRun(pace: Double) {
         this.pace = pace
         val route = Route()
@@ -163,23 +138,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         route.startMinute = c.get(Calendar.MINUTE)
         route.pace = pace
         Log.i("run", "pace is $pace")
-        localStorage.saveUser(User(username, 0.0))
-        routeCreator.send(routeService, route, username)
+        authCenter.saveUser(pace)
+        routeCreator.send(routeService, route, authCenter.username)
         disableSend()
     }
 
-    private var pace = 0.0
     private fun postponeRun(pace: Double) {
         this.pace = pace
         Log.i("run", "pace is $pace")
-        localStorage.saveUser(User(username, 0.0))
+        authCenter.saveUser(pace)
         TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
     }
 
     private fun runTimePicked(hour: Int, minute: Int) {
         Log.i("run", "run time is set to $hour:$minute")
         val route = Route(startHour = hour, startMinute = minute, pace = pace)
-        routeCreator.send(routeService, route, username)
+        routeCreator.send(routeService, route, authCenter.username)
         disableSend()
     }
 
@@ -209,28 +183,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onStart() {
         super.onStart()
         updateWorkerLocation()
-
         gpsManager.getPosition(this)
-
-        val user = localStorage.loadUser()
-        if (user == null) {
-            val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
-            Log.i(auth, "$account")
-            if (account == null) {
-                signIn()
-            } else {
-                username = account.email?.split("@")?.get(0) ?: "unknown_username"
-                Log.i(auth, "saved authenticated user is $username")
-                localStorage.saveUser(User(username, 0.0))
-            }
-        } else {
-            username = user.name!!
-        }
+        authCenter.loadUser() ?: authCenter.signIn()
     }
 
-
-    private fun signIn() {
-        val signInIntent = mGoogleSignInClient.signInIntent
+    private fun signIn(signInIntent: Intent) {
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
@@ -242,7 +199,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
     }
 
-    private val auth = "auth"
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
@@ -257,38 +213,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     val place = PlacePicker.getPlace(this, data)
                     var addressText = place.name.toString()
                     addressText += "\n" + place.address.toString()
-
-                    placeMarkerOnMap(place.latLng, true)
+                    addMarker(place.latLng)
                 }
             }
             RC_SIGN_IN -> {
-                val task = GoogleSignIn.getSignedInAccountFromIntent(data);
-                val account: GoogleSignInAccount?
-                try {
-                    account = task.getResult(ApiException::class.java)
-                } catch (e: ApiException) {
-                    // The ApiException status code indicates the detailed failure reason.
-                    // Please refer to the GoogleSignInStatusCodes class reference for more information.
-                    Log.w(auth, "signInResult:failed code=" + e.statusCode)
-                    showToast("Something went wrong, choosing random username.")
-                    username = "user_${abs(Random().nextInt() % 1000000)}"
-                    localStorage.saveUser(User(username, 0.0))
-                    return
-                }
-                account?.let {
-                    username = it.email?.split("@")?.get(0) ?: "unknown_username"
-                    Log.i(auth, "sign in method, user is $username")
-                    localStorage.saveUser(User(username, 0.0))
-                } ?: run {
-                    showToast("Please choose an account.")
-                    signIn()
-                }
+                authCenter.onResult(data)
             }
         }
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(applicationContext, message, LENGTH_SHORT).show()
+        showToast(message, this)
     }
 
     public override fun onResume() {
@@ -319,9 +254,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun setUpMap() {
         if (ActivityCompat.checkSelfPermission(this,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+                        ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(this,
+                    arrayOf(ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
             return
         }
 
@@ -333,7 +268,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (location != null) {
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
-                placeMarkerOnMap(currentLatLng, true)
+                addMarker(currentLatLng)
                 searchForNearbyRoutes(currentLatLng)
                 focusMapAt(currentLatLng)
                 onPolylineClickListener()
@@ -351,7 +286,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                with(find.route) {showToast("Pace: $pace\nStart: $startHour:$startMinute")}
+                with(find.route) { showToast("Pace: $pace\nStart: $startHour:$startMinute") }
             }
         }
     }
@@ -365,6 +300,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         worker?.disable()
         worker = Worker(location)
     }
+
+    fun addMarker(latLng: LatLng): Marker = map.addMarker(latLng.marker())
 
     inner class Worker(var location: LatLng, var enabled: Boolean = true) {
         init {
@@ -380,7 +317,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 first.color = colors[randGen.nextInt(colors.size)]
                                 first.isClickable = true
                                 first.tag = route.id
-                                otherRoutes.add(RouteLine(second, first.color, route))
+                                val routeLine = RouteLine(second, first.color, route)
+                                otherRoutes.add(routeLine)
+                                routeLine.draw()
                             }
                         }
                     }
@@ -394,27 +333,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    private fun drawLines() {
-        otherRoutes.forEach {
-            map.addPolyline(it.polynomial).apply {
-                color = it.color
-                isClickable = true
-                tag = it.route.id
-            }
+    fun RouteLine.draw() {
+        map.addPolyline(polynomial).apply {
+            color = this@draw.color
+            isClickable = true
+            tag = route.id
         }
-    }
-
-    fun placeMarkerOnMap(location: LatLng, isLocation: Boolean, f: (MarkerOptions) -> Unit = {}): Marker {
-        return routeCreator.addPoint(location, isLocation, f)
     }
 
     private fun startLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(this,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                        ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(this,
+                    arrayOf(ACCESS_FINE_LOCATION),
                     LOCATION_PERMISSION_REQUEST_CODE)
-            return
         }
     }
 

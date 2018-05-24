@@ -1,93 +1,74 @@
 package facebook.com.socialrunner
 
-import android.os.Build
-import android.util.Log
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.service.RouteService
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import org.joda.time.DateTime
-import kotlin.math.abs
 
 
-class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteChangeListener: (List<LatLng>) -> Unit,
-                      var waypoints: MutableList<LatLng> = mutableListOf(),
-                      var startTime: DateTime = DateTime(), private var canSend: Boolean = false) {
+class NewRouteCreator(private val googleMap: GoogleMap,
+                      private val apiKey: String,
+                      private val onChangeListener: (List<Marker>) -> Unit,
+                      private var markers: MutableList<Marker> = mutableListOf(),
+                      private var startTime: DateTime = DateTime(),
+                      private var canSend: Boolean = false) {
     companion object {
-        const val epsilon = 0.0005
-        const val LOCATION = "LOC"
-        const val RUNNER = "RUN"
+        const val WAYPOINT = "WAYPOINT"
     }
     var polyline: Polyline? = null
 
     init {
-
         googleMap.setOnMapClickListener { point ->
             if (!canSend) return@setOnMapClickListener
             launch(UI) {
-                addPoint(point, true)
-                onRouteChangeListener(waypoints)
+                addPoint(point)
                 drawWaypoints()
+                onChangeListener(markers)
             }
         }
 
         googleMap.setOnMarkerClickListener { marker ->
-            if (marker.tag == RUNNER)
+            if (marker.tag != WAYPOINT)
                 return@setOnMarkerClickListener false
             launch(UI) {
-                with(marker.position) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        waypoints.removeIf {
-                            abs(it.latitude - latitude) < epsilon &&
-                                    abs(it.longitude - longitude) < epsilon
-                        }
-                    }
-                }
+                markers.remove(marker)
                 googleMap.apply {
-//                    clear()
                     marker.remove()
                     polyline?.remove()
-//                    waypoints.forEach { addMarker(it.marker()) }
                     drawWaypoints()
+                    onChangeListener(markers)
                 }
-//                onRouteChangeListener(waypoints)
             }
             true
         }
     }
 
-    fun addPoint(point: LatLng, isLocation: Boolean, f: (MarkerOptions) -> Unit = {}) : Marker {
+    private fun addPoint(point: LatLng) : Marker {
         val marker = point.marker()
-        f(marker)
         val m = googleMap.addMarker(marker).apply {
-            tag = if (isLocation) LOCATION else RUNNER
+            tag = WAYPOINT
+            setIcon(BitmapDescriptorFactory.fromResource(R.drawable.add_location))
         }
-        waypoints.add(point)
+        markers.add(m)
         return m
     }
 
-    private fun LatLng.marker() = MarkerOptions().position(this)!!
-
     private fun drawWaypoints() {
-        if (waypoints.size <= 1) return
-        waypoints.getRouteOnMap(googleMap, apiKey, startTime){
+        if (markers.size <= 1) return
+        markers.toPoints().getRouteOnMap(googleMap, apiKey, startTime){
             polyline?.remove()
             polyline = first
-        }?.let { results ->
-            with(googleMap) {
-                addMarkersToMap(results)
-                positionCamera(results.routes[overview], googleMap.cameraPosition.zoom)
-            }
         }
     }
 
     fun send(routeService: RouteService, route: Route, userName: String) {
-        routeService.uploadNewRoute(userName, route, waypoints.toMutableList())
+        routeService.uploadNewRoute(userName, route, markers.toPoints())
         googleMap.clear()
     }
 
@@ -98,7 +79,11 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
 
     fun disable() {
         canSend = false
-        waypoints = mutableListOf()
-        googleMap.clear()
+        markers.forEach{ it.remove()}
+        polyline?.remove()
+        markers = mutableListOf()
+        polyline = null
     }
+
+    private fun List<Marker>.toPoints() = map {it.position}.toMutableList()
 }

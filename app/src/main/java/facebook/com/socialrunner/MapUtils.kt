@@ -99,3 +99,5 @@ fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTi
             }
             results
         }
+
+fun LatLng.marker() = MarkerOptions().position(this)!!
