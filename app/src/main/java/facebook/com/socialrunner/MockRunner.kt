@@ -1,9 +1,9 @@
 package facebook.com.socialrunner
 
 import android.util.Log
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.RoutePoint
@@ -49,7 +49,9 @@ class MockRunner(var mapActivity: MapsActivity,
                     launch(UI) {
                         if (!positionSet) {
                             positionSet = true
-                            lastMarker = mapActivity.placeMarkerOnMap(pos)
+                            lastMarker = mapActivity.placeMarkerOnMap(pos).apply {
+                                setIcon(BitmapDescriptorFactory.fromResource(R.drawable.runner))
+                            }
                         } else {
                             lastMarker!!.position = pos
                         }
@@ -59,9 +61,9 @@ class MockRunner(var mapActivity: MapsActivity,
                 }
                 pos += 1
             }
+            lastMarker?.remove()
             runner.isRunning = false
         }
 
     }
-
 }
