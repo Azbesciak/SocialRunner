@@ -404,7 +404,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    fun placeMarkerOnMap(location: LatLng, f: (MarkerOptions) -> Unit = {}): MarkerOptions {
+    fun placeMarkerOnMap(location: LatLng, f: (MarkerOptions) -> Unit = {}): Marker {
         return routeCreator.addPoint(location, f)
     }
 
