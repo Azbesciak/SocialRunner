@@ -23,16 +23,17 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
 
     init {
         googleMap.setOnMapClickListener { point ->
+            if (!canSend) return@setOnMapClickListener
             launch(UI) {
-                if (!canSend) return@launch
                 addPoint(point)
                 onRouteChangeListener(waypoints)
                 drawWaypoints()
             }
-
         }
 
         googleMap.setOnMarkerClickListener { marker ->
+            val shouldLeave = MockRunnerService.runners.any { it.markerId == marker.id }
+            if (shouldLeave) return@setOnMarkerClickListener true
             launch(UI) {
                 with(marker.position) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -42,7 +43,6 @@ class NewRouteCreator(val googleMap: GoogleMap, val apiKey: String, val onRouteC
                         }
                     } else {
                         marker.remove()
-
                     }
                 }
                 googleMap.apply {

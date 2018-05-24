@@ -12,11 +12,11 @@ import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 
 object MockRunnerService {
-    private val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej").map { Runner(it) }
+    val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej")
+            .map { Runner(it) }
     @Synchronized
     fun MapsActivity.running(route: Route) {
-        runners.firstOrNull { !it.isRunning }?. let {
-            it.isRunning = true
+        runners.firstOrNull { it.markerId == null }?. let {
             val runner = MockRunner(this, it, route.routePoints)
             launch {
                 Log.i("Mock Runner", "${it.name} started!")
@@ -26,15 +26,14 @@ object MockRunnerService {
         }
     }
 }
-data class Runner(val name: String, var isRunning: Boolean = false)
+data class Runner(val name: String, var markerId: String? = null)
 class MockRunner(var mapActivity: MapsActivity,
                  private val runner: Runner,
                  private val waypoint: List<RoutePoint>,
-                 private var lastMarker: Marker? = null,
                  private var pos: Int = 0
 ) {
+    private lateinit var lastMarker: Marker
     fun run() {
-        var positionSet = false
         launch {
             while (pos < waypoint.size - 1) {
                 var coef = 0.0f
@@ -47,13 +46,13 @@ class MockRunner(var mapActivity: MapsActivity,
 
                     val pos = LatLng(tempPos.latitude, tempPos.longitude)
                     launch(UI) {
-                        if (!positionSet) {
-                            positionSet = true
+                        if (!::lastMarker.isInitialized) {
                             lastMarker = mapActivity.placeMarkerOnMap(pos).apply {
                                 setIcon(BitmapDescriptorFactory.fromResource(R.drawable.runner))
                             }
+                            runner.markerId = lastMarker.id
                         } else {
-                            lastMarker!!.position = pos
+                            lastMarker.position = pos
                         }
                     }
                     coef += 0.005f
@@ -61,8 +60,10 @@ class MockRunner(var mapActivity: MapsActivity,
                 }
                 pos += 1
             }
-            lastMarker?.remove()
-            runner.isRunning = false
+            if (::lastMarker.isInitialized) {
+                lastMarker.remove()
+            }
+            runner.markerId = null
         }
 
     }
