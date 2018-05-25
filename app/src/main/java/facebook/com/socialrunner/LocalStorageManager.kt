@@ -7,7 +7,7 @@ import java.io.*
 
 class LocalStorageManager(val filename : String, val context: Context)
 {
-    fun saveUser(user : User)
+    fun saveUserdata(user : User)
     {
         try{
             val file = OutputStreamWriter(context.openFileOutput(filename, Context.MODE_PRIVATE))
@@ -19,7 +19,7 @@ class LocalStorageManager(val filename : String, val context: Context)
         }
     }
 
-    fun loadUser() : User? {
+    fun loadUserdata() : User? {
         return try {
             val data = InputStreamReader(context.openFileInput(filename)).readText().split(';')
             if(data.size >= 2)

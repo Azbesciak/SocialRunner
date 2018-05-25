@@ -37,7 +37,6 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.PolylineOptions
 import com.google.firebase.FirebaseApp
 import facebook.com.socialrunner.domain.RouteLine
 import facebook.com.socialrunner.domain.data.entity.Position
@@ -49,13 +48,10 @@ import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
-import java.util.jar.Manifest
 import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -100,10 +96,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        ActivityCompat.requestPermissions(this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
-        ActivityCompat.requestPermissions(this,
-                arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 2)
+        val permissions = PermissionsGuard(this)
+        permissions.accuirePermisions()
 
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -170,7 +164,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         route.startMinute = c.get(Calendar.MINUTE)
         route.pace = pace
         Log.i("run", "pace is $pace")
-        localStorage.saveUser(User(username, 0.0))
+        localStorage.saveUserdata(User(username, 0.0))
         routeCreator.send(routeService, route, username)
         disableSend()
     }
@@ -179,7 +173,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun postponeRun(pace: Double) {
         this.pace = pace
         Log.i("run", "pace is $pace")
-        localStorage.saveUser(User(username, 0.0))
+        localStorage.saveUserdata(User(username, 0.0))
         TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
     }
 
@@ -224,7 +218,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
         gpsManager.getPosition(this)
 
-        val user = localStorage.loadUser()
+        val user = localStorage.loadUserdata()
         if (user == null) {
             val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
             Log.i(auth, "$account")
@@ -233,7 +227,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             } else {
                 username = account.email?.split("@")?.get(0) ?: "unknown_username"
                 Log.i(auth, "saved authenticated user is $username")
-                localStorage.saveUser(User(username, 0.0))
+                localStorage.saveUserdata(User(username, 0.0))
             }
         } else {
             username = user.name!!
@@ -314,13 +308,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 Log.w(auth, "signInResult:failed code=" + e.statusCode)
                 showToast("Something went wrong, choosing random username.")
                 username = "user_${abs(Random().nextInt() % 1000000)}"
-                localStorage.saveUser(User(username, 0.0))
+                localStorage.saveUserdata(User(username, 0.0))
                 return
             }
             account?.let {
                 username = it.email?.split("@")?.get(0) ?: "unknown_username"
                 Log.i(auth, "sign in method, user is $username")
-                localStorage.saveUser(User(username, 0.0))
+                localStorage.saveUserdata(User(username, 0.0))
             } ?: run {
                 showToast("Please choose an account.")
                 signIn()
