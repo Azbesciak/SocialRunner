@@ -17,12 +17,11 @@ class NewRunDialog : DialogFragment() {
     private lateinit var appContext : Context
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         // Use the Builder class for convenient dialog construction
-        var pace = 0
         val builder = AlertDialog.Builder(activity)
         builder.setTitle("Final set up")
         val inputPace = EditText(appContext)
-        inputPace.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_CLASS_NUMBER)
-        inputPace.setHint("Type your pace [min/km]")
+        inputPace.inputType = InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_CLASS_NUMBER
+        inputPace.hint = "Type your pace [min/km]"
         val padding = 30
         inputPace.setPadding(padding ,padding ,padding ,padding )
         builder.setView(inputPace)

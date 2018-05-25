@@ -1,8 +1,9 @@
 package facebook.com.socialrunner
 
 import android.util.Log
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Marker
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.RoutePoint
@@ -10,49 +11,61 @@ import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 
-class MockRunner(var mapActivity : MapsActivity){
-    public var waypoint : MutableList<RoutePoint> = arrayListOf()
-    public lateinit var onPositionChgange : (pos : Position) -> Unit
-    public lateinit var name : String
-    private var pos = 0
-
-    public fun setRoute(route : Route) : MockRunner
-    {
-        waypoint.addAll(route.routePoints)
-        return this
+object MockRunnerService {
+    val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej")
+            .map { Runner(it) }
+    @Synchronized
+    fun MapsActivity.running(route: Route) {
+        runners.firstOrNull { !it.isRunning}?. let {
+            val runner = MockRunner(this, it, route.routePoints)
+            launch {
+                Log.i("Mock Runner", "${it.name} started!")
+                delay(3000)
+                runner.run()
+            }
+        }
     }
-    public fun setUsername(name : String) : MockRunner
-    {
-        this.name = name
-        return this
-    }
-    var lastMarker : MarkerOptions = MarkerOptions()
-    public fun run(){
-        var positionSet = false
-        launch(UI){
-            while(pos < waypoint.size - 1)
-            {
+}
+data class Runner(val name: String, var isRunning: Boolean = false)
+class MockRunner(private var mapActivity: MapsActivity,
+                 private val runner: Runner,
+                 private val waypoint: List<RoutePoint>,
+                 private var pos: Int = 0
+) {
+    private lateinit var lastMarker: Marker
+    fun run() {
+        launch {
+            while (pos < waypoint.size - 1) {
                 var coef = 0.0f
-                while(coef < 1.0001f)
-                {
-                    var tempPos = Position(waypoint[pos].loc.latitude + coef*(waypoint[pos+1].loc.latitude - waypoint[pos].loc.latitude),
-                            waypoint[pos].loc.longitude+coef*(waypoint[pos+1].loc.longitude- waypoint[pos].loc.longitude))
-                    Log.i("pos2", "New position is ${tempPos.longitude} ${tempPos.latitude}")
+                while (coef < 1.0001f) {
+                    val locA = waypoint[pos].loc
+                    val locB = waypoint[pos + 1].loc
+                    val tempPos = Position(locA.latitude + coef * (locB.latitude - locA.latitude),
+                            locA.longitude + coef * (locB.longitude - locA.longitude))
+                    Log.i("pos2", "New position of ${runner.name} is ${tempPos.longitude} ${tempPos.latitude}")
 
-                    var pos = LatLng(tempPos.latitude, tempPos.longitude)
-                    if(!positionSet)
-                    {
-                        positionSet = true
-                        lastMarker = mapActivity.placeMarkerOnMap(pos)
+                    val pos = LatLng(tempPos.latitude, tempPos.longitude)
+                    launch(UI) {
+                        if (!::lastMarker.isInitialized) {
+                            lastMarker = mapActivity.addMarker(pos).apply {
+                                setIcon(BitmapDescriptorFactory.fromResource(R.drawable.runner))
+                            }
+                            runner.isRunning = true
+                        } else {
+                            lastMarker.position = pos
+                        }
                     }
-                    lastMarker.position(pos)
-                    coef+=0.05f
-                    Thread.sleep(2000)
+                    coef += 0.005f
+                    delay(200)
                 }
                 pos += 1
             }
+            if (::lastMarker.isInitialized) {
+                launch(UI){
+                    lastMarker.remove()
+                }
+            }
+            runner.isRunning = false
         }
-
     }
-
 }

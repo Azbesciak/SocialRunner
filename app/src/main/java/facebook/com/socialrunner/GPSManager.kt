@@ -17,7 +17,7 @@ class GPSManager(val newPositionCallback: (Location) -> Unit) {
         // Acquire a reference to the system Location Manager
         val locationManager = mapsActivity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-// Define a listener that responds to location updates
+        // Define a listener that responds to location updates
         val locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
                 newPositionCallback(location)
