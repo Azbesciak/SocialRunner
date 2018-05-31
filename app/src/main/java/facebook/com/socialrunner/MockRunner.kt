@@ -10,7 +10,9 @@ import facebook.com.socialrunner.domain.data.entity.RoutePoint
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
+import java.lang.Math.max
 import java.util.*
+import kotlin.math.max
 
 object MockRunnerService {
     val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej")
@@ -34,10 +36,12 @@ class MockRunner(private var mapActivity: MapsActivity,
                  private var pos: Int = 0
 ) {
     private lateinit var lastMarker: Marker
+    val minVelocity = 15 //1.38
+    val maxVelocity = 20 //4.72
     fun run() {
         var runningCoefficient = 0.005
         val delay_ms = 200//ms
-        val targetVelocity = 1.38 + (4.72-1.38)*Random().nextDouble()   //1.38m/s = 5km/h, 4.72m/s = 17km/h
+        val targetVelocity = Math.max(minVelocity + (maxVelocity-minVelocity)*Random().nextDouble(), 3.0)   //1.38m/s = 5km/h, 4.72m/s = 17km/h
         launch {
             while (pos < waypoint.size - 1) {
                 var progress = 0.0
