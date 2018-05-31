@@ -10,6 +10,7 @@ import facebook.com.socialrunner.domain.data.entity.RoutePoint
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
+import java.util.*
 
 object MockRunnerService {
     val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej")
@@ -34,15 +35,20 @@ class MockRunner(private var mapActivity: MapsActivity,
 ) {
     private lateinit var lastMarker: Marker
     fun run() {
+        var runningCoefficient = 0.005
+        val delay_ms = 200//ms
+        val targetVelocity = 1.38 + (4.72-1.38)*Random().nextDouble()   //1.38m/s = 5km/h, 4.72m/s = 17km/h
         launch {
             while (pos < waypoint.size - 1) {
-                var coef = 0.0f
-                while (coef < 1.0001f) {
-                    val locA = waypoint[pos].loc
-                    val locB = waypoint[pos + 1].loc
-                    val tempPos = Position(locA.latitude + coef * (locB.latitude - locA.latitude),
-                            locA.longitude + coef * (locB.longitude - locA.longitude))
-                    Log.i("pos2", "New position of ${runner.name} is ${tempPos.longitude} ${tempPos.latitude}")
+                var progress = 0.0
+                val locA = waypoint[pos].loc
+                val locB = waypoint[pos + 1].loc
+                val distance = GPSManager.calculateDistance(locA, locB)
+                runningCoefficient = ((delay_ms/1000.0)*targetVelocity)/distance
+                while (progress < 1.0001) {
+                    val tempPos = Position(locA.latitude + progress * (locB.latitude - locA.latitude),
+                            locA.longitude + progress * (locB.longitude - locA.longitude))
+                   // Log.i("pos2", "New position of ${runner.name} is ${tempPos.longitude} ${tempPos.latitude}")
 
                     val pos = LatLng(tempPos.latitude, tempPos.longitude)
                     launch(UI) {
@@ -55,8 +61,8 @@ class MockRunner(private var mapActivity: MapsActivity,
                             lastMarker.position = pos
                         }
                     }
-                    coef += 0.005f
-                    delay(200)
+                    progress += runningCoefficient
+                    delay(delay_ms)
                 }
                 pos += 1
             }
