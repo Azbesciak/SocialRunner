@@ -13,11 +13,7 @@ class RunnerService {
     private val runnerRepository: RunnerRepository = RunnerRepository()
     private val runnerNameIdCache: MutableMap<String, String> = mutableMapOf()
 
-    fun registerRunner(username: String) {
 
-        val runner = Runner(name = username, routeIds = mutableListOf())
-        runnerRepository.create(runner)
-    }
 
     fun getRunnerPosition(username : String, handler : ResultHandler<String>) {
         runnerRepository.fetchLocation(username, handler)

@@ -61,10 +61,10 @@ class NewRouteCreator(private val googleMap: GoogleMap,
 
     private fun drawWaypoints() {
         if (markers.size <= 1) return
-        markers.toPoints().getRouteOnMap(googleMap, apiKey, startTime){
-            polyline?.remove()
-            polyline = first
-        }
+            markers.toPoints().getRouteOnMap(googleMap, apiKey, startTime){
+                polyline?.remove()
+                polyline = first
+            }
     }
 
     fun send(routeService: RouteService, route: Route, userName: String) {

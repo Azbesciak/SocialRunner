@@ -1,10 +1,11 @@
 package facebook.com.socialrunner.domain.data.repository
 
 
+import facebook.com.socialrunner.domain.data.entity.Entity
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Runner
 
-class RunnerRepository : FirebaseRepository<Runner>(RUNNER_ENTITY_PATH) {
+class RunnerRepository : FirebaseRepository<Entity>(RUNNER_ENTITY_PATH) {
 
     fun fetchByName(name: String, handler: ResultHandler<Runner>) {
         fetchByField("name", name, handler)

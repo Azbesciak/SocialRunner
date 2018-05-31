@@ -10,7 +10,7 @@ fun Map<*, Map<*,*>>.toRoutes(): List<Route> {
         val routePoints = vals.flatMap { it.values }
                 .map { RoutePoint(loc = Position(it["latitude"]!!, it["longitude"]!!)) }
                 .toMutableList()
-        Route(id = it["id"].toString(),
+        Route(
                 pace = it["pace"].toString().toDouble(),
                 startHour = it["startHour"].toString().toInt(),
                 startMinute = it["startMinute"].toString().toInt(),

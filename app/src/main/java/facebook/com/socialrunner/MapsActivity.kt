@@ -28,9 +28,13 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.FirebaseApp
+import com.google.firebase.database.FirebaseDatabase
 import facebook.com.socialrunner.MockRunnerService.running
 import facebook.com.socialrunner.domain.RouteLine
+import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
+import facebook.com.socialrunner.domain.data.entity.Runner
+import facebook.com.socialrunner.domain.data.repository.FirebaseManager
 import facebook.com.socialrunner.domain.service.RouteService
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
@@ -61,6 +65,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             sendRouteBtn.isEnabled = it.isNotEmpty()
         })
     }
+
+
+    private val firebaseManager by lazy {
+        FirebaseApp.initializeApp(this)
+        FirebaseManager(FirebaseDatabase.getInstance(), ::newRouteFetched, ::newRunnerFetched)
+    }
+
+
+
     private val gpsManager = GPSManager(::newPosition)
 
     private val otherRoutes = CopyOnWriteArrayList<RouteLine>()
@@ -91,7 +104,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         createLocationRequest()
         authCenter = AuthCenter(applicationContext, this, ::signIn)
 
-        FirebaseApp.initializeApp(this)
+        firebaseManager.onRunnerRemoved = ::runnerRemoved
+        firebaseManager.onRunnerChanged = ::runnerChanged
+        firebaseManager.addRunner(Runner(name = "Witold", pace = 5.4))
+
+        //example updating runner's position
+//        launch(UI) {
+//            delay(2000)
+//            Log.i("random", "updating ${randomRunner.name}")
+//            //val newRunner = randomRunner.copy(longitude = 45.5, latitude = 33.0).also { it.id = randomRunner.id } //ten update dodaje biegaczowi id, nie wiem dlaczego
+//            firebaseManager.updateRunnerPosition(randomRunner, Position(333.33, 111.11))
+//        }
+    }
+
+    private fun runnerChanged(runner: Runner) {
+        Log.i("datachagned", "runner ${runner.name} has been changed")
+    }
+
+    private fun runnerRemoved(runner: Runner) {
+        Log.i("dataremoved", "runner ${runner.name} has been removed from database")
+    }
+    lateinit var randomRunner : Runner
+    private fun newRunnerFetched(runner: Runner) {
+        randomRunner = runner
+        Log.i("datafetched", "new runner fetched, runner's name ${runner.name}, position ${runner.position()}, id ${runner.id}")
+    }
+
+    private fun newRouteFetched(route: Route) {
+        Log.i("datafetched", "new route fetched, route id ${route.id}, number of points ${route.routePoints.size}")
     }
 
     private fun initAutocomplete() {

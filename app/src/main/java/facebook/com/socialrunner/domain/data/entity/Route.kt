@@ -1,14 +1,7 @@
 package facebook.com.socialrunner.domain.data.entity
 
-import com.google.firebase.database.GenericTypeIndicator
-
-
-class Route(id: String? = null,
+data class Route(
             var pace: Double? = null,
             var startHour: Int? = null,
             var startMinute: Int? = null,
-            var routePoints: MutableList<RoutePoint> = mutableListOf()) : Entity(id) {
-    companion object {
-        val objType = Route().javaClass
-    }
-}
+            var routePoints: MutableList<RoutePoint> = mutableListOf()) : Entity()

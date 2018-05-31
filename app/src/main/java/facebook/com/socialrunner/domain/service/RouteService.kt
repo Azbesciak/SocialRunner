@@ -44,34 +44,17 @@ class RouteService {
         longitude = rp.loc.longitude
     }
 
-    fun getRoutesForUser(username: String, onFetch: (List<Route>) -> Unit) {
-
-        val runnerHandler = ResultHandler<Runner> { runner ->
-
-            val routes = mutableMapOf<String, Route>()
-            runner?.let {
-                it.routeIds.forEach { routeId ->
-                    routeRepository.fetchById(routeId, ResultHandler { route ->
-                        routes[routeId] = route!!
-                        onFetch(ArrayList(routes.values))
-                    })
-                }
-            }
-        }
-
-        runnerRepository.fetchByName(username, runnerHandler)
-    }
 
     fun uploadNewRoute(username: String, route: Route, waypoints: MutableList<LatLng>) {
         route.routePoints.addAll(waypoints.toRoutePoints())
 
         val handler = ResultHandler<Runner> { runner ->
-            routeRepository.create(route)
+            //routeRepository.create(route)
 
-            if (runner != null) {
-                runner.routeIds.add(route.id!!)
-                runnerRepository.update(runner)
-            }
+//            if (runner != null) {
+//                runner.routeIds.add(route.id!!)
+//                runnerRepository.update(runner)
+//            }
         }
 
         runnerRepository.fetchByName(username, handler)
