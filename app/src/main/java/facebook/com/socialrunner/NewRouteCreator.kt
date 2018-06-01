@@ -6,7 +6,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.Polyline
 import facebook.com.socialrunner.domain.data.entity.Route
-import facebook.com.socialrunner.domain.service.RouteService
+import facebook.com.socialrunner.domain.data.repository.RoutesStorage
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import org.joda.time.DateTime
@@ -21,7 +21,7 @@ class NewRouteCreator(private val googleMap: GoogleMap,
     companion object {
         const val WAYPOINT = "WAYPOINT"
     }
-    var polyline: Polyline? = null
+    private var polyline: Polyline? = null
 
     init {
         googleMap.setOnMapClickListener { point ->
@@ -67,9 +67,10 @@ class NewRouteCreator(private val googleMap: GoogleMap,
             }
     }
 
-    fun send(routeService: RouteService, route: Route, userName: String) {
-        routeService.uploadNewRoute(userName, route, markers.toPoints())
-        googleMap.clear()
+    fun send(routeService: RoutesStorage, route: Route) {
+        route.routePoints = markers.toPoints().toRoutePoints()
+        routeService.addRoute(route)
+        clear()
     }
 
     fun initialize() {
@@ -79,6 +80,9 @@ class NewRouteCreator(private val googleMap: GoogleMap,
 
     fun disable() {
         canSend = false
+        clear()
+    }
+    private fun clear() {
         markers.forEach{ it.remove()}
         polyline?.remove()
         markers = mutableListOf()

@@ -9,7 +9,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import facebook.com.socialrunner.domain.data.localdata.User
+import facebook.com.socialrunner.domain.data.entity.User
 import java.util.*
 import kotlin.math.abs
 
@@ -53,8 +53,10 @@ class AuthCenter(private val applicationContext: Context,
         }
     }
 
-    fun saveUser(pace: Double) {
-        localStorage.saveUser(User(username, pace))
+    fun saveUser(pace: Double): User {
+        val user = User(username, pace)
+        localStorage.saveUser(user)
+        return user
     }
 
     fun loadUser(): User? = localStorage.loadUser()?.also { username = it.name }

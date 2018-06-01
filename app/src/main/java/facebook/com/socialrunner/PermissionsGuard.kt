@@ -6,11 +6,9 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 
 class PermissionsGuard(var activity : Activity){
-    fun accuirePermisions()
-    {
+    fun acquirePermissions() {
         checkPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE, STORAGE_PERMISSIONS_REQUEST_CODE)
         checkPermission(android.Manifest.permission.ACCESS_FINE_LOCATION, LOCATION_PERMISSION_REQUEST_CODE)
-
     }
 
     private fun checkPermission(permission : String, permissionCode : Int){

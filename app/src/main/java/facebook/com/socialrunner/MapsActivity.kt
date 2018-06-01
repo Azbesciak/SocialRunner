@@ -1,10 +1,11 @@
 package facebook.com.socialrunner
 
-import android.Manifest.permission.*
+import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -31,34 +32,29 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.database.FirebaseDatabase
 import facebook.com.socialrunner.MockRunnerService.running
 import facebook.com.socialrunner.domain.RouteLine
-import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.Runner
-import facebook.com.socialrunner.domain.data.repository.FirebaseManager
-import facebook.com.socialrunner.domain.service.RouteService
+import facebook.com.socialrunner.domain.data.repository.RoutesStorage
+import facebook.com.socialrunner.domain.data.repository.RunnersManager
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.launch
-import java.io.IOException
-import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
     private lateinit var map: GoogleMap
+    private lateinit var geocoder: Geocoder
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var lastLocation: Location
     private lateinit var locationRequest: LocationRequest
     private lateinit var authCenter: AuthCenter
     private var locationUpdateState = false
-    private val routeService by lazy { RouteService() }
+
     private val apiKey by lazy { getString(R.string.google_api_key) }
-    private var worker: Worker? = null
     private var fetchedPosition = false
     private lateinit var firstPositionOnMap: LatLng
+    private var region: String? = null
 
     private val routeCreator by lazy {
         NewRouteCreator(map, apiKey, {
@@ -66,14 +62,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         })
     }
 
-
-    private val firebaseManager by lazy {
+    private val db by lazy {
         FirebaseApp.initializeApp(this)
-        FirebaseManager(FirebaseDatabase.getInstance(), ::newRouteFetched, ::newRunnerFetched)
+        FirebaseDatabase.getInstance()
     }
 
+    private val runnersManager by lazy {
+        RunnersManager(db, ::newRunnerFetched, ::runnerRemoved, ::runnerChanged).apply { init() }
+    }
 
-
+    private var routeStorage: RoutesStorage? = null
     private val gpsManager = GPSManager(::newPosition)
 
     private val otherRoutes = CopyOnWriteArrayList<RouteLine>()
@@ -94,26 +92,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         mapFragment.getMapAsync(this)
 
         val permissions = PermissionsGuard(this)
-        permissions.accuirePermisions()
+        permissions.acquirePermissions()
 
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
+        geocoder = Geocoder(applicationContext)
         initButtons()
         initAutocomplete()
         createLocationRequest()
         authCenter = AuthCenter(applicationContext, this, ::signIn)
-
-        firebaseManager.onRunnerRemoved = ::runnerRemoved
-        firebaseManager.onRunnerChanged = ::runnerChanged
-        firebaseManager.addRunner(Runner(name = "Witold", pace = 5.4))
 
         //example updating runner's position
 //        launch(UI) {
 //            delay(2000)
 //            Log.i("random", "updating ${randomRunner.name}")
 //            //val newRunner = randomRunner.copy(longitude = 45.5, latitude = 33.0).also { it.id = randomRunner.id } //ten update dodaje biegaczowi id, nie wiem dlaczego
-//            firebaseManager.updateRunnerPosition(randomRunner, Position(333.33, 111.11))
+//            runnersManager.updateRunnerPosition(randomRunner, Position(333.33, 111.11))
 //        }
     }
 
@@ -124,25 +118,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun runnerRemoved(runner: Runner) {
         Log.i("dataremoved", "runner ${runner.name} has been removed from database")
     }
-    lateinit var randomRunner : Runner
+
+    lateinit var randomRunner: Runner
     private fun newRunnerFetched(runner: Runner) {
         randomRunner = runner
-        Log.i("datafetched", "new runner fetched, runner's name ${runner.name}, position ${runner.position()}, id ${runner.id}")
-    }
-
-    private fun newRouteFetched(route: Route) {
-        Log.i("datafetched", "new route fetched, route id ${route.id}, number of points ${route.routePoints.size}")
+        Log.i("datafetched", "new runner fetched, runner's name ${runner.name}, position ${runner.position()}, id ${runner.name}")
     }
 
     private fun initAutocomplete() {
         val fragment = fragmentManager
                 .findFragmentById(R.id.autocomplete_fragment) as PlaceAutocompleteFragment
-        fragment.setOnPlaceSelectedListener(object: PlaceSelectionListener {
+        fragment.setOnPlaceSelectedListener(object : PlaceSelectionListener {
             override fun onPlaceSelected(p0: Place?) {
                 p0?.latLng?.run {
                     focusMapAt(this)
                 }
             }
+
             override fun onError(p0: Status?) {}
         })
     }
@@ -173,31 +165,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    private var pace = 0.0
     private fun startRun(pace: Double) {
-        this.pace = pace
-        val route = Route()
-        val c = Calendar.getInstance()
-        route.startHour = c.get(Calendar.HOUR_OF_DAY)
-        route.startMinute = c.get(Calendar.MINUTE)
-        route.pace = pace
+        val route = Route().apply {
+            currentTime()
+            leader = authCenter.saveUser(pace)
+            this.pace = pace
+        }
         Log.i("run", "pace is $pace")
-        authCenter.saveUser(pace)
-        routeCreator.send(routeService, route, authCenter.username)
+        routeCreator.send(routeStorage!!, route)
         disableSend()
     }
 
     private fun postponeRun(pace: Double) {
-        this.pace = pace
         Log.i("run", "pace is $pace")
         authCenter.saveUser(pace)
-        TimePickerFragment().setCallback(::runTimePicked).show(fragmentManager, "this tag is awesome!")
+        TimePickerFragment()
+                .setCallback(::runTimePicked)
+                .show(fragmentManager, "this tag is awesome!")
     }
 
     private fun runTimePicked(hour: Int, minute: Int) {
         Log.i("run", "run time is set to $hour:$minute")
-        val route = Route(startHour = hour, startMinute = minute, pace = pace)
-        routeCreator.send(routeService, route, authCenter.username)
+        val route = Route(startHour = hour, startMinute = minute, leader = authCenter.loadUser())
+        routeCreator.send(routeStorage!!, route)
         disableSend()
     }
 
@@ -219,7 +209,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         launch(UI) {
             while (true) {
                 delay(2500)
-                worker?.location = map.cameraPosition.target
+                searchNearby(map.cameraPosition.target)
             }
         }
     }
@@ -312,11 +302,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             if (location != null) {
                 lastLocation = location
                 val currentLatLng = LatLng(location.latitude, location.longitude)
-                addMarker(currentLatLng)
                 searchForNearbyRoutes(currentLatLng)
                 focusMapAt(currentLatLng)
                 onPolylineClickListener()
-                routeService
             }
         }
     }
@@ -330,7 +318,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                with(find.route) { showToast("Pace: $pace\nStart: $startHour:$startMinute") }
+                with(find.route) { showToast("Pace: $pace\nStart: $startHour:$startMinute\nRunner: ${leader!!.name}") }
             }
         }
     }
@@ -340,44 +328,42 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         searchNearby(location)
     }
 
-    private fun searchNearby(location: LatLng) {
-        worker?.disable()
-        worker = Worker(location)
-    }
 
     fun addMarker(latLng: LatLng): Marker = map.addMarker(latLng.marker())
 
-    inner class Worker(var location: LatLng, var enabled: Boolean = true) {
-        init {
-            launch {
-                while (enabled) {
-                    Log.i("DOWNLOAD", "download nearby routes...")
-                    routeService.getQueriesInArea(location) { route ->
-                        val isAlready = otherRoutes.any { it.route.id == route.id }
-                        if (isAlready) return@getQueriesInArea
-                        running(route)
-                        launch {
-                            route.toWayPoints().getRouteOnMap(map, apiKey) {
-                                first.color = colors[randGen.nextInt(colors.size)]
-                                first.isClickable = true
-                                first.tag = route.id
-                                val routeLine = RouteLine(second, first.color, route)
-                                otherRoutes.add(routeLine)
-                                routeLine.draw()
-                            }
-                        }
-                    }
-                    delay(10, TimeUnit.SECONDS)
-                }
+    private fun searchNearby(latLng: LatLng) {
+        val location = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+        if (location.isNotEmpty()) {
+            val loc = location.first()
+            val curRegion = loc.locality ?: loc.subAdminArea ?: loc.adminArea ?: loc.countryName
+            ?: "unknown"
+            if (curRegion != region) {
+                region = curRegion
+                showToast("changed region to $region")
+                routeStorage?.cleanUp()
+                routeStorage = RoutesStorage(db, onRouteAdded = ::onNewRoute, region = curRegion)
+                routeStorage!!.init()
             }
-        }
-
-        fun disable() {
-            enabled = false
         }
     }
 
-    fun RouteLine.draw() {
+    private fun onNewRoute(route: Route) {
+        val isAlready = otherRoutes.any { it.route.id == route.id }
+        if (isAlready) return
+        running(route)
+        launch {
+            route.toWayPoints().getRouteOnMap(map, apiKey) {
+                first.color = colors[randGen.nextInt(colors.size)]
+                first.isClickable = true
+                first.tag = route.id
+                val routeLine = RouteLine(second, first.color, route)
+                otherRoutes.add(routeLine)
+                routeLine.draw()
+            }
+        }
+    }
+
+    private fun RouteLine.draw() {
         map.addPolyline(polynomial).apply {
             color = this@draw.color
             isClickable = true
@@ -403,26 +389,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         val builder = LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest)
-        val client = LocationServices.getSettingsClient(this)
-        val task = client.checkLocationSettings(builder.build())
-
-        task.addOnSuccessListener {
-            locationUpdateState = true
-            startLocationUpdates()
-        }
-        task.addOnFailureListener { e ->
-            if (e is ResolvableApiException) {
-                // Location settings are not satisfied, but this can be fixed
-                // by showing the user a dialog.
-                try {
-                    // Show the dialog by calling startResolutionForResult(),
-                    // and check the result in onActivityResult().
-                    e.startResolutionForResult(this@MapsActivity,
-                            REQUEST_CHECK_SETTINGS)
-                } catch (sendEx: IntentSender.SendIntentException) {
-                    // Ignore the error.
+        LocationServices
+                .getSettingsClient(this)
+                .checkLocationSettings(builder.build())
+                .apply {
+                    addOnSuccessListener {
+                        locationUpdateState = true
+                        startLocationUpdates()
+                    }
+                    addOnFailureListener { e ->
+                        if (e is ResolvableApiException) {
+                            // Location settings are not satisfied, but this can be fixed
+                            // by showing the user a dialog.
+                            try {
+                                // Show the dialog by calling startResolutionForResult(),
+                                // and check the result in onActivityResult().
+                                e.startResolutionForResult(this@MapsActivity,
+                                        REQUEST_CHECK_SETTINGS)
+                            } catch (sendEx: IntentSender.SendIntentException) {
+                                // Ignore the error.
+                            }
+                        }
+                    }
                 }
-            }
-        }
     }
 }

@@ -11,12 +11,12 @@ import com.google.android.gms.maps.model.PolylineOptions
 import com.google.maps.DirectionsApi
 import com.google.maps.GeoApiContext
 import com.google.maps.internal.PolylineEncoding
+import com.google.maps.model.DirectionsLeg
 import com.google.maps.model.DirectionsResult
 import com.google.maps.model.DirectionsRoute
 import com.google.maps.model.TravelMode
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
-import facebook.com.socialrunner.domain.data.entity.RoutePoint
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import org.joda.time.DateTime
@@ -60,7 +60,7 @@ fun getEndLocationTitle(results: DirectionsResult) = with(results.first()) {
     "Time :${duration.humanReadable} Distance :${distance.humanReadable}"
 }
 
-fun DirectionsResult.first() = routes[overview].legs[overview]
+fun DirectionsResult.first(): DirectionsLeg = routes[overview].legs!![overview]
 
 fun List<LatLng>.getDirectionsDetails(mode: TravelMode, departure: DateTime, apiKey: String) =
         try {
@@ -85,9 +85,9 @@ fun getGeoContext(apiKey: String): GeoApiContext = GeoApiContext.Builder().apiKe
         .build()
 
 fun List<LatLng>.toRoutePoints() =
-        map { RoutePoint(loc = Position(it.latitude, it.longitude)) }.toMutableList()
+        map { Position(it.latitude, it.longitude) }.toMutableList()
 
-fun Route.toWayPoints() = routePoints.map { LatLng(it.loc.latitude, it.loc.longitude) }
+fun Route.toWayPoints() = routePoints.map { LatLng(it.latitude, it.longitude) }
 
 fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTime = DateTime.now(),
                                polConsumer: Pair<Polyline, PolylineOptions>.() -> Unit = {}) =
@@ -101,3 +101,5 @@ fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTi
         }
 
 fun LatLng.marker() = MarkerOptions().position(this)!!
+
+typealias Sup<T> = (T) -> Unit

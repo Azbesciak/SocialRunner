@@ -6,13 +6,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
-import facebook.com.socialrunner.domain.data.entity.RoutePoint
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import java.lang.Math.max
 import java.util.*
-import kotlin.math.max
 
 object MockRunnerService {
     val runners = mutableListOf("Janek", "Krysia", "Heniu", "Przemek", "Andrzej")
@@ -32,23 +29,23 @@ object MockRunnerService {
 data class Runner(val name: String, var isRunning: Boolean = false)
 class MockRunner(private var mapActivity: MapsActivity,
                  private val runner: Runner,
-                 private val waypoint: List<RoutePoint>,
+                 private val waypoint: List<Position>,
                  private var pos: Int = 0
 ) {
     private lateinit var lastMarker: Marker
     val minVelocity = 15 //1.38
     val maxVelocity = 20 //4.72
     fun run() {
-        var runningCoefficient = 0.005
-        val delay_ms = 200//ms
+        var runningCoefficient: Double
+        val delayMs = 200//ms
         val targetVelocity = Math.max(minVelocity + (maxVelocity-minVelocity)*Random().nextDouble(), 3.0)   //1.38m/s = 5km/h, 4.72m/s = 17km/h
         launch {
             while (pos < waypoint.size - 1) {
                 var progress = 0.0
-                val locA = waypoint[pos].loc
-                val locB = waypoint[pos + 1].loc
+                val locA = waypoint[pos]
+                val locB = waypoint[pos + 1]
                 val distance = GPSManager.calculateDistance(locA, locB)
-                runningCoefficient = ((delay_ms/1000.0)*targetVelocity)/distance
+                runningCoefficient = ((delayMs/1000.0)*targetVelocity)/distance
                 while (progress < 1.0001) {
                     val tempPos = Position(locA.latitude + progress * (locB.latitude - locA.latitude),
                             locA.longitude + progress * (locB.longitude - locA.longitude))
@@ -66,7 +63,7 @@ class MockRunner(private var mapActivity: MapsActivity,
                         }
                     }
                     progress += runningCoefficient
-                    delay(delay_ms)
+                    delay(delayMs)
                 }
                 pos += 1
             }

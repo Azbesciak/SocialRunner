@@ -7,43 +7,68 @@ import android.widget.TimePicker
 import java.util.*
 import android.app.TimePickerDialog
 import android.content.Context
+import android.text.Editable
 import android.widget.EditText
 import android.text.InputType
+import android.text.TextUtils
+import android.text.TextWatcher
 
 
 class NewRunDialog : DialogFragment() {
-    private lateinit var postponeCallback : (Double) -> Unit
-    private lateinit var startCallback : (Double) -> Unit
-    private lateinit var appContext : Context
+    private lateinit var postponeCallback: (Double) -> Unit
+    private lateinit var startCallback: (Double) -> Unit
+    private lateinit var appContext: Context
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         // Use the Builder class for convenient dialog construction
-        val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Final set up")
-        val inputPace = EditText(appContext)
-        inputPace.inputType = InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_CLASS_NUMBER
-        inputPace.hint = "Type your pace [min/km]"
-        val padding = 30
-        inputPace.setPadding(padding ,padding ,padding ,padding )
-        builder.setView(inputPace)
-
-        builder.setMessage("Set your pace and select when you want to start the run")
+        val inputPace = EditText(appContext).apply {
+            inputType = InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_CLASS_NUMBER
+            hint = "Type your pace [min/km]"
+            val padding = 30
+            setPadding(padding, padding, padding, padding)
+        }
+        val dialog = AlertDialog.Builder(activity)
+                .setTitle("Final set up")
+                .setView(inputPace)
+                .setMessage("Set your pace and select when you want to start the run")
                 .setPositiveButton("Start now", { dialog, id ->
-                    startCallback.invoke(inputPace.text.toString().replace(',', '.').toDouble())
+                    inputPace.ifNotEmpty { startCallback.invoke(it) }
                 })
-                .setNegativeButton("Postpone", { dialog, id ->
-                    postponeCallback.invoke(inputPace.text.toString().replace(',', '.').toDouble())
+                .setNegativeButton("Postpone", { _, _ ->
+                    inputPace.ifNotEmpty { postponeCallback.invoke(it) }
                 })
+                .create()
+        dialog.setOnShowListener {
+            dialog.changeButtonsState(false)
+        }
 
-        return builder.create()
+        inputPace.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                dialog.changeButtonsState(!TextUtils.isEmpty(s))
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        return dialog
     }
 
-    fun setCallbacks(startCallback : (Double) -> Unit, postponeCallback: (Double) -> Unit) : NewRunDialog{
+    private inline fun EditText.ifNotEmpty(f: (Double) -> Unit) {
+        if (!TextUtils.isEmpty(text))
+            f(text.toString().replace(',', '.').toDouble())
+    }
+
+    private fun AlertDialog.changeButtonsState(isEnabled: Boolean) {
+        getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = isEnabled
+        getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = isEnabled
+    }
+
+    fun setCallbacks(startCallback: (Double) -> Unit, postponeCallback: (Double) -> Unit): NewRunDialog {
         this.postponeCallback = postponeCallback
         this.startCallback = startCallback
         return this
     }
 
-    fun setContext(context: Context) : NewRunDialog{
+    fun setContext(context: Context): NewRunDialog {
         appContext = context
         return this
     }
@@ -51,9 +76,9 @@ class NewRunDialog : DialogFragment() {
 
 
 class FirstModalDialog : DialogFragment() {
-    private lateinit var yesCallback : () -> Unit
-    private lateinit var noCallback : () -> Unit
-    private lateinit var appContext : Context
+    private lateinit var yesCallback: () -> Unit
+    private lateinit var noCallback: () -> Unit
+    private lateinit var appContext: Context
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         // Use the Builder class for convenient dialog construction
         val builder = AlertDialog.Builder(activity)
@@ -69,20 +94,20 @@ class FirstModalDialog : DialogFragment() {
         return builder.create()
     }
 
-    fun setCallbacks(noCallback : () -> Unit, yesCallback: () -> Unit) : FirstModalDialog{
+    fun setCallbacks(noCallback: () -> Unit, yesCallback: () -> Unit): FirstModalDialog {
         this.yesCallback = yesCallback
         this.noCallback = noCallback
         return this
     }
 
-    fun setContext(context: Context) : FirstModalDialog{
+    fun setContext(context: Context): FirstModalDialog {
         appContext = context
         return this
     }
 }
 
-class TimePickerFragment : DialogFragment(), TimePickerDialog.OnTimeSetListener{
-    lateinit var timePickedCallback : (Int, Int) -> Unit
+class TimePickerFragment : DialogFragment(), TimePickerDialog.OnTimeSetListener {
+    lateinit var timePickedCallback: (Int, Int) -> Unit
     override fun onTimeSet(view: TimePicker?, hourOfDay: Int, minute: Int) {
         timePickedCallback.invoke(hourOfDay, minute)
     }
@@ -99,8 +124,7 @@ class TimePickerFragment : DialogFragment(), TimePickerDialog.OnTimeSetListener{
                 DateFormat.is24HourFormat(activity))
     }
 
-    fun setCallback(timePicked : (Int, Int) -> Unit) : TimePickerFragment
-    {
+    fun setCallback(timePicked: (Int, Int) -> Unit): TimePickerFragment {
         this.timePickedCallback = timePicked
         return this
     }
