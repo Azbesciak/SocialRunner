@@ -6,7 +6,5 @@ data class Runner(
         var routeIds: MutableList<String> = arrayListOf(),
         var pace: Double = 0.0,
         var position: Position? = null,
-        var latitude: Double = 0.0,
-        var routeID: String = "",
         var isRunning: Boolean = false
 )
