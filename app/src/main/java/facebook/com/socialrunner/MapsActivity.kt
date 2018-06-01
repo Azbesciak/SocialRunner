@@ -318,7 +318,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                with(find.route) { showToast("Pace: $pace\nStart: $startHour:$startMinute\nRunner: ${leader!!.name}") }
+                with(find.route) { showToast(
+                        "Pace: $pace" +
+                        "\nStart: $startHour:$startMinute" +
+                        "\nRunner: ${leader!!.name}")
+                }
             }
         }
     }
@@ -327,7 +331,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         otherRoutes.clear()
         searchNearby(location)
     }
-
 
     fun addMarker(latLng: LatLng): Marker = map.addMarker(latLng.marker())
 

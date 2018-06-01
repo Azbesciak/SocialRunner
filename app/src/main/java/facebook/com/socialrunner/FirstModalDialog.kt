@@ -75,37 +75,6 @@ class NewRunDialog : DialogFragment() {
 }
 
 
-class FirstModalDialog : DialogFragment() {
-    private lateinit var yesCallback: () -> Unit
-    private lateinit var noCallback: () -> Unit
-    private lateinit var appContext: Context
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        // Use the Builder class for convenient dialog construction
-        val builder = AlertDialog.Builder(activity)
-
-        builder.setMessage("Do you want to create a new path or to join an exisiting one?")
-                .setPositiveButton("Create", { dialog, id ->
-                    noCallback.invoke()
-                })
-                .setNegativeButton("Join", { dialog, id ->
-                    yesCallback.invoke()
-                })
-
-        return builder.create()
-    }
-
-    fun setCallbacks(noCallback: () -> Unit, yesCallback: () -> Unit): FirstModalDialog {
-        this.yesCallback = yesCallback
-        this.noCallback = noCallback
-        return this
-    }
-
-    fun setContext(context: Context): FirstModalDialog {
-        appContext = context
-        return this
-    }
-}
-
 class TimePickerFragment : DialogFragment(), TimePickerDialog.OnTimeSetListener {
     lateinit var timePickedCallback: (Int, Int) -> Unit
     override fun onTimeSet(view: TimePicker?, hourOfDay: Int, minute: Int) {

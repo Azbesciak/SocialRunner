@@ -15,7 +15,7 @@ import kotlin.math.abs
 
 class AuthCenter(private val applicationContext: Context,
                  activity: Activity,
-                 private val signInAction: (Intent) -> Unit) {
+                 private val signInAction: Sup<Intent>) {
     companion object {
         private const val AUTH_TOKEN = "auth"
     }

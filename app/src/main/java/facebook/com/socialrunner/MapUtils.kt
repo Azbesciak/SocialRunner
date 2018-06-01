@@ -33,20 +33,6 @@ val randGen = Random()
 typealias LL = com.google.maps.model.LatLng
 const val overview = 0
 
-fun GoogleMap.addMarkersToMap(results: DirectionsResult) {
-    with(results.first()) {
-        addMarker(MarkerOptions().position(LatLng(startLocation.lat, startLocation.lng)))
-        addMarker(MarkerOptions().position(LatLng(endLocation.lat, endLocation.lng))
-                .title(startAddress).snippet(getEndLocationTitle(results)))
-    }
-}
-
-fun GoogleMap.positionCamera(route: DirectionsRoute, zoom : Float) {
-    with(route.legs[overview].endLocation) {
-        moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), zoom))
-    }
-}
-
 
 fun GoogleMap.createPolyline(results: DirectionsResult): Pair<Polyline, PolylineOptions> {
     val decodedPath = PolylineEncoding
