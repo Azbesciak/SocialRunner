@@ -67,9 +67,9 @@ class NewRouteCreator(private val googleMap: GoogleMap,
             }
     }
 
-    fun send(routeService: RoutesStorage, route: Route) {
+    fun send(routesStorage: RoutesStorage, route: Route) {
         route.routePoints = markers.toPoints().toRoutePoints()
-        routeService.addRoute(route)
+        routesStorage.add(route)
         clear()
     }
 

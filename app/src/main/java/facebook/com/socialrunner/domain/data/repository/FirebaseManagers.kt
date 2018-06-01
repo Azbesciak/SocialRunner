@@ -15,7 +15,7 @@ abstract class FirebaseStorage<T>(protected val database: FirebaseDatabase,
                                   private val onAdd: Sup<T>,
                                   private val onRemove: Sup<T>,
                                   private val onChange: Sup<T>) {
-    val dbRef by lazy {
+    private val dbRef by lazy {
         database.getReference(refRoot)
     }
     private val listener: ChildEventListener = object : ChildEventListener {
@@ -43,16 +43,9 @@ abstract class FirebaseStorage<T>(protected val database: FirebaseDatabase,
     }
 
     protected abstract fun modify(t: T, snap: DataSnapshot): T
-
-    fun init() {
-        dbRef.addChildEventListener(listener)
-    }
-
-    fun cleanUp() {
-        dbRef.removeEventListener(listener)
-    }
-
-    fun addRoute(route: Route) = database.getReference(refRoot).push().setValue(route)
+    fun init() = dbRef.addChildEventListener(listener)
+    fun cleanUp() =dbRef.removeEventListener(listener)
+    fun add(route: T) = database.getReference(refRoot).push().setValue(route)
 }
 
 class RunnersManager(database: FirebaseDatabase,
@@ -85,7 +78,6 @@ class RoutesStorage(database: FirebaseDatabase,
         t.id = snap.key!!
         return t
     }
-
 
     fun updateRoute(route: Route) = database.getReference("$refRoot/${route.id}").setValue(route)
     fun removeRoute(route: Route) = database.getReference("$refRoot/${route.id}").removeValue()
