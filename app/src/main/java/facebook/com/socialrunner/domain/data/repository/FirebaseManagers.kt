@@ -44,8 +44,8 @@ abstract class FirebaseStorage<T>(protected val database: FirebaseDatabase,
 
     protected abstract fun modify(t: T, snap: DataSnapshot): T
     fun init() = dbRef.addChildEventListener(listener)
-    fun cleanUp() =dbRef.removeEventListener(listener)
-    fun add(route: T) = database.getReference(refRoot).push().setValue(route)
+    fun cleanUp() = dbRef.removeEventListener(listener)
+    fun add(value: T) = database.getReference(refRoot).push().setValue(value)
 }
 
 class RunnersManager(database: FirebaseDatabase,

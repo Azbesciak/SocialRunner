@@ -34,6 +34,17 @@ typealias LL = com.google.maps.model.LatLng
 const val overview = 0
 
 
+fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTime = DateTime.now(),
+                               polConsumer: Pair<Polyline, PolylineOptions>.() -> Unit = {}) =
+        getDirectionsDetails(TravelMode.WALKING, startTime, apiKey)?.let { results ->
+            launch(UI) {
+                with(map) {
+                    createPolyline(results).polConsumer()
+                }
+            }
+            results
+        }
+
 fun GoogleMap.createPolyline(results: DirectionsResult): Pair<Polyline, PolylineOptions> {
     val decodedPath = PolylineEncoding
             .decode(results.routes[overview].overviewPolyline.encodedPath)
@@ -41,12 +52,6 @@ fun GoogleMap.createPolyline(results: DirectionsResult): Pair<Polyline, Polyline
     val polylineOptions = PolylineOptions().addAll(decodedPath)
     return addPolyline(polylineOptions) to polylineOptions
 }
-
-fun getEndLocationTitle(results: DirectionsResult) = with(results.first()) {
-    "Time :${duration.humanReadable} Distance :${distance.humanReadable}"
-}
-
-fun DirectionsResult.first(): DirectionsLeg = routes[overview].legs!![overview]
 
 fun List<LatLng>.getDirectionsDetails(mode: TravelMode, departure: DateTime, apiKey: String) =
         try {
@@ -74,17 +79,6 @@ fun List<LatLng>.toRoutePoints() =
         map { Position(it.latitude, it.longitude) }.toMutableList()
 
 fun Route.toWayPoints() = routePoints.map { LatLng(it.latitude, it.longitude) }
-
-fun List<LatLng>.getRouteOnMap(map: GoogleMap, apiKey: String, startTime: DateTime = DateTime.now(),
-                               polConsumer: Pair<Polyline, PolylineOptions>.() -> Unit = {}) =
-        getDirectionsDetails(TravelMode.WALKING, startTime, apiKey)?.let { results ->
-            launch(UI) {
-                with(map) {
-                    createPolyline(results).polConsumer()
-                }
-            }
-            results
-        }
 
 fun LatLng.marker() = MarkerOptions().position(this)!!
 
