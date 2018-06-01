@@ -32,14 +32,16 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.database.FirebaseDatabase
 import facebook.com.socialrunner.MockRunnerService.running
 import facebook.com.socialrunner.domain.RouteLine
+import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.Runner
 import facebook.com.socialrunner.domain.data.repository.RoutesStorage
-import facebook.com.socialrunner.domain.data.repository.RunnersManager
+import facebook.com.socialrunner.domain.data.repository.RunnersStorage
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -52,9 +54,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var locationUpdateState = false
 
     private val apiKey by lazy { getString(R.string.google_api_key) }
-    private var fetchedPosition = false
-    private lateinit var firstPositionOnMap: LatLng
-    private var region: String? = null
+    private var searchRegion: String? = null
+    private var runnerRegion: String? = null
+    private var currentRunner: MapRunner? = null
 
     private val routeCreator by lazy {
         NewRouteCreator(map, apiKey, {
@@ -67,14 +69,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         FirebaseDatabase.getInstance()
     }
 
-    private val runnersManager by lazy {
-        RunnersManager(db, ::newRunnerFetched, ::runnerRemoved, ::runnerChanged).apply { init() }
-    }
-
+    private var runnersStorage: RunnersStorage? = null
     private var routeStorage: RoutesStorage? = null
     private val gpsManager = GPSManager(::newPosition)
 
     private val otherRoutes = CopyOnWriteArrayList<RouteLine>()
+    private val otherRunners = ConcurrentHashMap<String, MapRunner>()
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
@@ -101,28 +101,32 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         initAutocomplete()
         createLocationRequest()
         authCenter = AuthCenter(applicationContext, this, ::signIn)
-
-        //example updating runner's position
-//        launch(UI) {
-//            delay(2000)
-//            Log.i("random", "updating ${randomRunner.name}")
-//            //val newRunner = randomRunner.copy(longitude = 45.5, latitude = 33.0).also { it.id = randomRunner.id } //ten update dodaje biegaczowi id, nie wiem dlaczego
-//            runnersManager.updateRunnerPosition(randomRunner, Position(333.33, 111.11))
-//        }
     }
 
     private fun runnerChanged(runner: Runner) {
+        ifNotCurrentRunner(runner) {
+            otherRunners[runner.name]?.updatePosition(runner.position!!.toLatLng())
+        }
         Log.i("datachagned", "runner ${runner.name} has been changed")
     }
 
     private fun runnerRemoved(runner: Runner) {
+        otherRunners.remove(runner.name)
         Log.i("dataremoved", "runner ${runner.name} has been removed from database")
     }
 
-    lateinit var randomRunner: Runner
     private fun newRunnerFetched(runner: Runner) {
-        randomRunner = runner
-        Log.i("datafetched", "new runner fetched, runner's name ${runner.name}, position ${runner.position()}, id ${runner.name}")
+        ifNotCurrentRunner(runner) {
+            val mapRunner = MapRunner(runner, this)
+            otherRunners[runner.name] = mapRunner
+            mapRunner.updatePosition(runner.position!!.toLatLng())
+        }
+        Log.i("datafetched", "new runner fetched, runner's name ${runner.name}, position ${runner.position}, id ${runner.name}")
+
+    }
+
+    private fun ifNotCurrentRunner(runner: Runner, onDifferent: () -> Unit) {
+        if (currentRunner?.runner?.name != runner.name) onDifferent()
     }
 
     private fun initAutocomplete() {
@@ -168,7 +172,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun startRun(pace: Double) {
         val route = Route().apply {
             currentTime()
-            leader = authCenter.saveUser(pace)
+            leader = authCenter.updatePace(pace)
             this.pace = pace
         }
         Log.i("run", "pace is $pace")
@@ -178,7 +182,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun postponeRun(pace: Double) {
         Log.i("run", "pace is $pace")
-        authCenter.saveUser(pace)
+        authCenter.updatePace(pace)
         TimePickerFragment()
                 .setCallback(::runTimePicked)
                 .show(fragmentManager, "this tag is awesome!")
@@ -226,11 +230,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun newPosition(location: Location) {
-        if (!fetchedPosition) {
-            firstPositionOnMap = LatLng(location.latitude, location.longitude)
-            fetchedPosition = true
+        if (currentRunner == null) {
+            val user = authCenter.loadUser() ?: return
+            val runner = Runner(user.name, pace = user.pace, isRunning = true)
+            currentRunner = MapRunner(runner, this)
         }
-        Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
+        val latLng = LatLng(location.latitude, location.longitude)
+        onLocationChange(latLng, runnerRegion) { newRegion ->
+            runnersStorage?.cleanUp(currentRunner!!.runner)
+            runnerRegion = newRegion
+            runnersStorage = RunnersStorage(db, ::newRunnerFetched, ::runnerRemoved, ::runnerChanged, newRegion)
+            runnersStorage!!.updateRunner(currentRunner!!.runner)
+        }
+        currentRunner!!.run {
+            runner.position = Position(latitude = location.latitude, longitude = location.longitude)
+            runnersStorage?.updateRunnerPosition(runner)
+            Log.i("gps", "New position in main lat:${location.latitude}, lon:${location.longitude}")
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
@@ -265,6 +281,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         if (!locationUpdateState) {
             startLocationUpdates()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        removeDbListeners()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        removeDbListeners()
     }
 
     /**
@@ -318,10 +344,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         map.setOnPolylineClickListener { line ->
             val find = otherRoutes.find { it.route.id == line.tag }
             find?.run {
-                with(find.route) { showToast(
-                        "Pace: $pace" +
-                        "\nStart: $startHour:$startMinute" +
-                        "\nRunner: ${leader!!.name}")
+                with(find.route) {
+                    showToast(
+                            "Pace: $pace" +
+                                    "\nStart: $startHour:$startMinute" +
+                                    "\nRunner: ${leader!!.name}")
                 }
             }
         }
@@ -335,19 +362,33 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     fun addMarker(latLng: LatLng): Marker = map.addMarker(latLng.marker())
 
     private fun searchNearby(latLng: LatLng) {
+        onLocationChange(latLng, searchRegion) { newRegion ->
+            searchRegion = newRegion
+            showToast("changed searchRegion to $searchRegion")
+            routeStorage?.cleanUp()
+            routeStorage = RoutesStorage(db, onRouteAdded = ::onNewRoute, region = newRegion)
+        }
+    }
+
+    private fun onLocationChange(latLng: LatLng, curRegion: String?, onNewRegion: Sup<String>) {
         val location = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
         if (location.isNotEmpty()) {
             val loc = location.first()
-            val curRegion = loc.locality ?: loc.subAdminArea ?: loc.adminArea ?: loc.countryName
+            val newRegion = loc.locality ?: loc.subAdminArea ?: loc.adminArea ?: loc.countryName
             ?: "unknown"
-            if (curRegion != region) {
-                region = curRegion
-                showToast("changed region to $region")
-                routeStorage?.cleanUp()
-                routeStorage = RoutesStorage(db, onRouteAdded = ::onNewRoute, region = curRegion)
-                routeStorage!!.init()
+            if (curRegion != newRegion) {
+                onNewRegion(newRegion)
             }
         }
+    }
+
+    private fun removeDbListeners() {
+        routeStorage?.cleanUp()
+        if (currentRunner != null && runnersStorage != null) {
+            runnersStorage!!.cleanUp(currentRunner!!.runner)
+        }
+        routeStorage = null
+        runnersStorage = null
     }
 
     private fun onNewRoute(route: Route) {

@@ -41,28 +41,33 @@ abstract class FirebaseStorage<T>(protected val database: FirebaseDatabase,
             }
         }
     }
-
+    init {
+        dbRef.addChildEventListener(listener)
+    }
     protected abstract fun modify(t: T, snap: DataSnapshot): T
-    fun init() = dbRef.addChildEventListener(listener)
-    fun cleanUp() = dbRef.removeEventListener(listener)
+    open fun cleanUp() = dbRef.removeEventListener(listener)
     fun add(value: T) = database.getReference(refRoot).push().setValue(value)
 }
 
-class RunnersManager(database: FirebaseDatabase,
+class RunnersStorage(database: FirebaseDatabase,
                      onRunnerAdded: Sup<Runner>,
                      onRunnerRemoved: Sup<Runner>,
-                     onRunnerChanged: Sup<Runner>)
-    : FirebaseStorage<Runner>(database, Runner::class.java, "runners",
+                     onRunnerChanged: Sup<Runner>,
+                     region: String)
+    : FirebaseStorage<Runner>(database, Runner::class.java, "runners/$region",
         onRunnerAdded, onRunnerRemoved, onRunnerChanged) {
     override fun modify(t: Runner, snap: DataSnapshot): Runner {
         return t
     }
 
+    fun cleanUp(runner: Runner) {
+        removeRunner(runner)
+        super.cleanUp()
+    }
     fun updateRunner(runner: Runner) = database.getReference("$refRoot/${runner.name}").setValue(runner)
-    fun updateRunnerPosition(runner: Runner, position: Position) {
+    fun updateRunnerPosition(runner: Runner) {
         //may be one line but could not read to Position object instead of reading to latitude and longitude
-        database.getReference("$refRoot/${runner.name}/latitude").setValue(position.latitude)
-        database.getReference("$refRoot/${runner.name}/longitude").setValue(position.longitude)
+        database.getReference("$refRoot/${runner.name}/position").setValue(runner.position)
     }
 
     fun removeRunner(runner: Runner) = database.getReference("$refRoot/${runner.name}").removeValue()

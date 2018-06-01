@@ -31,7 +31,7 @@ class GPSManager(val newPositionCallback: (Location) -> Unit) {
             override fun onProviderDisabled(provider: String) {}
         }
 
-        locationManager.requestLocationUpdates(locationProvider, 2000, 0f, locationListener)
+        locationManager.requestLocationUpdates(locationProvider, 10000, 50f, locationListener)
     }
 
     companion object {

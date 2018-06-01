@@ -20,7 +20,7 @@ class AuthCenter(private val applicationContext: Context,
         private const val AUTH_TOKEN = "auth"
     }
     private var localStorage: LocalStorageManager
-    lateinit var username: String
+    private lateinit var user: User
     private var mGoogleSignInClient: GoogleSignInClient
 
     init {
@@ -39,27 +39,33 @@ class AuthCenter(private val applicationContext: Context,
             // Please refer to the GoogleSignInStatusCodes class reference for more information.
             Log.w(AUTH_TOKEN, "signInResult:failed code=" + e.statusCode)
             showToast("Something went wrong, choosing random username.", applicationContext)
-            username = "user_${abs(Random().nextInt() % 1000000)}"
-            localStorage.saveUser(User(username, 0.0))
+            val username = "user_${abs(Random().nextInt() % 1000000)}"
+            saveUser(username, 0.0)
             return
         }
         account?.let {
-            username = it.email?.split("@")?.get(0) ?: "unknown_username"
+            val username = it.email?.split("@")?.get(0) ?: "unknown_username"
             Log.i(AUTH_TOKEN, "sign in method, user is $username")
-            localStorage.saveUser(User(username, 0.0))
+            saveUser(username, 0.0)
         } ?: run {
             showToast("Please choose an account.", applicationContext)
             signInAction(mGoogleSignInClient.signInIntent)
         }
     }
 
-    fun saveUser(pace: Double): User {
-        val user = User(username, pace)
+    fun updatePace(pace: Double): User {
+        user.pace = pace
         localStorage.saveUser(user)
         return user
     }
 
-    fun loadUser(): User? = localStorage.loadUser()?.also { username = it.name }
+    private fun saveUser(username: String, pace: Double): User {
+        user = User(username, pace)
+        localStorage.saveUser(user)
+        return user
+    }
+
+    fun loadUser(): User? = localStorage.loadUser()
 
     fun signIn() {
         val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
@@ -67,9 +73,9 @@ class AuthCenter(private val applicationContext: Context,
         if (account == null) {
             signInAction(mGoogleSignInClient.signInIntent)
         } else {
-            username = account.email?.split("@")?.get(0) ?: "unknown_username"
+            val username = account.email?.split("@")?.get(0) ?: "unknown_username"
             Log.i(AUTH_TOKEN, "saved authenticated user is $username")
-            saveUser(0.0)
+            saveUser(username, 0.0)
         }
     }
 }

@@ -82,4 +82,6 @@ fun Route.toWayPoints() = routePoints.map { LatLng(it.latitude, it.longitude) }
 
 fun LatLng.marker() = MarkerOptions().position(this)!!
 
+fun Position.toLatLng() = LatLng(latitude, longitude)
+
 typealias Sup<T> = (T) -> Unit
