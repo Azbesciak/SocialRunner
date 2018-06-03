@@ -5,7 +5,6 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import facebook.com.socialrunner.Sup
-import facebook.com.socialrunner.domain.data.entity.Position
 import facebook.com.socialrunner.domain.data.entity.Route
 import facebook.com.socialrunner.domain.data.entity.Runner
 
@@ -19,9 +18,9 @@ abstract class FirebaseStorage<T>(protected val database: FirebaseDatabase,
         database.getReference(refRoot)
     }
     private val listener: ChildEventListener = object : ChildEventListener {
-        override fun onCancelled(route: DatabaseError) {}
+        override fun onCancelled(error: DatabaseError) {}
 
-        override fun onChildMoved(route: DataSnapshot, p1: String?) {}
+        override fun onChildMoved(snap: DataSnapshot, p1: String?) {}
 
         override fun onChildChanged(snap: DataSnapshot, p1: String?) {
             snap.getValue(clas)?.let {
@@ -56,8 +55,8 @@ class RunnersStorage(database: FirebaseDatabase,
                      region: String)
     : FirebaseStorage<Runner>(database, Runner::class.java, "runners/$region",
         onRunnerAdded, onRunnerRemoved, onRunnerChanged) {
-    override fun modify(t: Runner, snap: DataSnapshot): Runner {
-        return t
+    override fun modify(runner: Runner, snap: DataSnapshot): Runner {
+        return runner
     }
 
     fun cleanUp(runner: Runner) {
@@ -79,9 +78,9 @@ class RoutesStorage(database: FirebaseDatabase,
                     onRouteChanged: Sup<Route> = {},
                     region: String) : FirebaseStorage<Route>(database, Route::class.java,
         "routes/$region", onRouteAdded, onRouteRemoved, onRouteChanged) {
-    override fun modify(t: Route, snap: DataSnapshot): Route {
-        t.id = snap.key!!
-        return t
+    override fun modify(route: Route, snap: DataSnapshot): Route {
+        route.id = snap.key!!
+        return route
     }
 
     fun updateRoute(route: Route) = database.getReference("$refRoot/${route.id}").setValue(route)
